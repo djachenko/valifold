@@ -1,15 +1,11 @@
 import fnmatch
 import re
-from dataclasses import dataclass, field
-from functools import cache
-from re import Pattern, Match
-from typing import Protocol, runtime_checkable
-
-from pygments.lexers import compiled
+from dataclasses import dataclass
+from functools import cached_property
+from re import Match
 
 
-@runtime_checkable
-class Pattern(Protocol):
+class Pattern:
     def matches(self, name: str) -> bool:
         ...
 
@@ -23,8 +19,7 @@ class BasePattern(Pattern):
 
 
 class RegexPattern(BasePattern):
-    @property
-    @cache
+    @cached_property
     def __compiled(self) -> re.Pattern[str]:
         return re.compile(self.pattern)
 
