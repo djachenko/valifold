@@ -1,62 +1,75 @@
+from abc import abstractmethod, ABC
 from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
 from typing import List
 
-from pattern import Pattern, RegexPattern
+from src.pattern import Pattern, RegexPattern
+from src.errors import ValifoldError, MandatoryMissedError, NotDirectoryError, ExtraItemsError, ManyOptionsError, \
+    FewOptionsError, AllValidationsFailedError, NotFileError, NoSidecarError
 
 
-@dataclass(frozen=True)
-class Error:
-    paths: List[Path]
-
-    @classmethod
-    def message(cls) -> str:
+class Validator(ABC):
+    @abstractmethod
+    def validate(self, path: Path) -> List[ValifoldError]:
         ...
 
 
-class Validator:
-    def validate(self, path: Path) -> List[Error]:
-        ...
-
-
-class Matcher:
+class Matcher(ABC):
+    @abstractmethod
     def matches(self, name: str) -> bool:
         ...
 
 
+class RootValidator(ABC):
+    @abstractmethod
+    def validate_as_root(self, path: Path) -> list[ValifoldError]:
+        ...
+
+
 @dataclass(frozen=True)
-class SubstructureValidator(Validator, Matcher):
+class SubstructureValidator(Validator, Matcher, RootValidator, ABC):
     pattern: Pattern
     is_mandatory: bool
 
     def matches(self, name: str) -> bool:
         return self.pattern.matches(name)
 
-    def validate(self, parent_path: Path) -> List[Error]:
+    def validate(self, parent: Path) -> list[ValifoldError]:
         errors = []
         count = 0
 
-        for item in parent_path.iterdir():
-            if self.matches(item.name):
+        for child in parent.iterdir():
+            if self.matches(child.name):
                 count += 1
-                errors += self.validate_structure(item)
+                errors += self.validate_structure(child)
 
-        if count == 0:
-            errors.append(f"There is no match for '{self.pattern}' in '{parent_path}'")
+        if count == 0 and self.is_mandatory:
+            errors.append(MandatoryMissedError([parent], f"There is no match for '{self.pattern}' in '{{path}}'"))
 
         return errors
 
-    def validate_structure(self, self_path: Path) -> List[Error]:
+    def validate_as_root(self, path: Path) -> list[ValifoldError]:
+        errors = []
+
+        if self.matches(path.name) and path.exists():
+            errors.extend(self.validate_structure(path))
+        elif self.is_mandatory:
+            errors.append(MandatoryMissedError([path]))
+
+        return errors
+
+    @abstractmethod
+    def validate_structure(self, path: Path) -> list[ValifoldError]:
         ...
 
 
 class FileValidator(SubstructureValidator):
-    def validate_structure(self, self_path: Path) -> List[Error]:
+    def validate_structure(self, self_path: Path) -> List[ValifoldError]:
         errors = []
 
         if not self_path.is_file():
-            errors.append(f"'{self_path}' is not a file")
+            errors.append(NotFileError([self_path]))
 
         return errors
 
@@ -65,9 +78,9 @@ class FileValidator(SubstructureValidator):
 class FolderValidator(SubstructureValidator):
     children: List[Validator]
 
-    def validate_structure(self, self_path: Path) -> List[Error]:
+    def validate_structure(self, self_path: Path) -> List[ValifoldError]:
         if not self_path.is_dir():
-            return [f"'{self_path}' is not a directory"]
+            return [NotDirectoryError([self_path])]
 
         errors = []
         structure_children = []
@@ -78,9 +91,14 @@ class FolderValidator(SubstructureValidator):
             if isinstance(child, Matcher):
                 structure_children.append(child)
 
+        extra_items = []
+
         for item in self_path.iterdir():
             if not any(child.matches(item.name) for child in structure_children):
-                errors.append(f"'{item}' is extra")
+                extra_items.append(item)
+
+        if extra_items:
+            errors.append(ExtraItemsError(extra_items))
 
         return errors
 
@@ -105,8 +123,8 @@ class XorValidator(Validator, Matcher):
     def matches(self, name: str) -> bool:
         return any(child.matches(name) for child in self.__matching_children)
 
-    def validate(self, self_path: Path) -> List[Error]:
-        error_lists = [child.validate(self_path) for child in self.children]
+    def validate(self, parent: Path) -> List[ValifoldError]:
+        error_lists = [child.validate(parent) for child in self.children]
         success_count = 0
 
         for error_list in error_lists:
@@ -116,14 +134,14 @@ class XorValidator(Validator, Matcher):
         errors = []
 
         if success_count == 0:
-            errors.append(f"'{self_path}' failed all validations")
+            errors.append(AllValidationsFailedError([parent]))
 
             for error_list in error_lists:
                 errors += error_list
         elif success_count < self.min_checks:
-            errors.append(f"'{self_path}' matches too few options")
+            errors.append(FewOptionsError([parent]))
         elif self.max_checks and success_count > self.max_checks:
-            errors.append(f"'{self_path}' matches too many options")
+            errors.append(ManyOptionsError([parent]))
 
         return errors
 
@@ -132,7 +150,7 @@ class AnyValidator(Validator, Matcher):
     def matches(self, name: str) -> bool:
         return True
 
-    def validate(self, path: Path) -> List[Error]:
+    def validate(self, path: Path) -> List[ValifoldError]:
         return []
 
 
@@ -145,7 +163,7 @@ class SidecarValidator(Validator):
         assert self.main_pattern.group_count > 0
         assert self.main_pattern.group_count == self.sidecar_pattern.group_count
 
-    def validate(self, path: Path) -> List[Error]:
+    def validate(self, path: Path) -> List[ValifoldError]:
         main_matches = set()
         side_matches = set()
         main_map = {}
@@ -165,9 +183,7 @@ class SidecarValidator(Validator):
 
         errors = []
 
-        for mismatch in main_matches.difference(side_matches):
-            item = main_map[mismatch]
-
-            errors.append(f"'{item}' does not have sidecar")
+        if mismatched_items := [main_map[mismatch] for mismatch in main_matches.difference(side_matches)]:
+            errors.append(NoSidecarError(mismatched_items))
 
         return errors
