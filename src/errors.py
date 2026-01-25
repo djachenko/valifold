@@ -1,16 +1,17 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import ClassVar, List
+from typing import ClassVar
 
 
 @dataclass(frozen=True)
 class ValifoldError:
-    paths: List[Path]
+    paths: list[Path]
     message: str | None = None
     default_message: ClassVar[str | None] = None
 
     def __post_init__(self):
-        assert self.message or self.default_message is not None
+        if not (self.message or self.default_message):
+            raise ValueError("Message or default message should be not empty or None")
 
     def formatted_message(self, root_path: Path | None = None) -> str:
         if root_path:
