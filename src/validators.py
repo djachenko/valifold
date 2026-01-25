@@ -2,16 +2,15 @@ from abc import abstractmethod, ABC
 from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
-from typing import List
 
-from src.pattern import Pattern, RegexPattern
 from src.errors import ValifoldError, MandatoryMissedError, NotDirectoryError, ExtraItemsError, ManyOptionsError, \
     FewOptionsError, AllValidationsFailedError, NotFileError, NoSidecarError
+from src.pattern import Pattern, RegexPattern
 
 
 class Validator(ABC):
     @abstractmethod
-    def validate(self, path: Path) -> List[ValifoldError]:
+    def validate(self, path: Path) -> list[ValifoldError]:
         ...
 
 
@@ -65,7 +64,7 @@ class SubstructureValidator(Validator, Matcher, RootValidator, ABC):
 
 
 class FileValidator(SubstructureValidator):
-    def validate_structure(self, self_path: Path) -> List[ValifoldError]:
+    def validate_structure(self, self_path: Path) -> list[ValifoldError]:
         errors = []
 
         if not self_path.is_file():
@@ -76,25 +75,25 @@ class FileValidator(SubstructureValidator):
 
 @dataclass(frozen=True)
 class FolderValidator(SubstructureValidator):
-    children: List[Validator]
+    children: list[Validator]
 
-    def validate_structure(self, self_path: Path) -> List[ValifoldError]:
+    @cached_property
+    def _structure_children(self) -> list[Matcher]:
+        return [child for child in self.children if isinstance(child, Matcher)]
+
+    def validate_structure(self, self_path: Path) -> list[ValifoldError]:
         if not self_path.is_dir():
             return [NotDirectoryError([self_path])]
 
         errors = []
-        structure_children = []
 
         for child in self.children:
             errors += child.validate(self_path)
 
-            if isinstance(child, Matcher):
-                structure_children.append(child)
-
         extra_items = []
 
         for item in self_path.iterdir():
-            if not any(child.matches(item.name) for child in structure_children):
+            if not any(child.matches(item.name) for child in self._structure_children):
                 extra_items.append(item)
 
         if extra_items:
@@ -105,25 +104,31 @@ class FolderValidator(SubstructureValidator):
 
 @dataclass(frozen=True)
 class XorValidator(Validator, Matcher):
-    children: List[Validator]
+    children: list[Validator]
     min_checks: int
     max_checks: int | None
 
     def __post_init__(self):
-        assert self.min_checks >= 0
+        if not self.min_checks >= 0:
+            raise ValueError(f"Minimum number of checks should be greater than or equal to 0,"
+                             f" but {self.min_checks} is given")
 
         if self.max_checks is not None:
-            assert self.max_checks > 0
-            assert self.min_checks <= self.max_checks
+            if not self.max_checks > 0:
+                raise ValueError(f"Maximum number of checks should be greater than 0, but {self.max_checks} is given")
+
+            if not self.min_checks <= self.max_checks:
+                raise ValueError(f"Maximum number of checks should be greater than or equal to minimum number,"
+                                 f"but {self.max_checks} and {self.min_checks} are given correspondingly")
 
     @cached_property
-    def __matching_children(self) -> List[SubstructureValidator]:
+    def _matching_children(self) -> list[SubstructureValidator]:
         return [child for child in self.children if isinstance(child, SubstructureValidator)]
 
     def matches(self, name: str) -> bool:
-        return any(child.matches(name) for child in self.__matching_children)
+        return any(child.matches(name) for child in self._matching_children)
 
-    def validate(self, parent: Path) -> List[ValifoldError]:
+    def validate(self, parent: Path) -> list[ValifoldError]:
         error_lists = [child.validate(parent) for child in self.children]
         success_count = 0
 
@@ -150,7 +155,7 @@ class AnyValidator(Validator, Matcher):
     def matches(self, name: str) -> bool:
         return True
 
-    def validate(self, path: Path) -> List[ValifoldError]:
+    def validate(self, path: Path) -> list[ValifoldError]:
         return []
 
 
@@ -160,10 +165,16 @@ class SidecarValidator(Validator):
     sidecar_pattern: RegexPattern
 
     def __post_init__(self):
-        assert self.main_pattern.group_count > 0
-        assert self.main_pattern.group_count == self.sidecar_pattern.group_count
+        if not self.main_pattern.group_count > 0:
+            raise ValueError("Main pattern should have at least one capture group")
 
-    def validate(self, path: Path) -> List[ValifoldError]:
+        if not self.sidecar_pattern.group_count > 0:
+            raise ValueError("Sidecar pattern should have at least one capture group")
+
+        if not self.main_pattern.group_count == self.sidecar_pattern.group_count:
+            raise ValueError("Main and sidecar pattern should have equal count of capture groups")
+
+    def validate(self, path: Path) -> list[ValifoldError]:
         main_matches = set()
         side_matches = set()
         main_map = {}
