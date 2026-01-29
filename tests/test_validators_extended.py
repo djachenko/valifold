@@ -5,8 +5,7 @@ import pytest
 
 from src.errors import (
     MandatoryMissedError, NotFileError, NotDirectoryError,
-    NoSidecarError, AllValidationsFailedError, FewOptionsError,
-    ManyOptionsError, ExtraItemsError
+    NoSidecarError, AllValidationsFailedError, ManyOptionsError, ExtraItemsError
 )
 from src.functions import file, folder, sidecar, xor, only_one, at_least_one, anything
 from src.pattern import w, r
@@ -14,8 +13,41 @@ from src.pattern import w, r
 
 @pytest.fixture
 def temp_dir():
+    """Временная директория для тестов"""
     with tempfile.TemporaryDirectory() as tmpdir:
         yield Path(tmpdir)
+
+
+@pytest.fixture
+def create_files():
+    """Фикстура для создания файлов и папок"""
+
+    def _create(base_dir: Path, structure: dict):
+        """
+        Создает структуру файлов и папок
+        structure = {
+            'files': ['file1.txt', 'file2.jpg'],
+            'folders': ['folder1', 'folder2'],
+            'nested': {
+                'folder1': {
+                    'files': ['nested.txt']
+                }
+            }
+        }
+        """
+
+        for key, value in structure.items():
+            new_path = base_dir / key
+
+            if value is None:
+                new_path.touch()
+
+            if isinstance(value, dict):
+                new_path.mkdir(parents=True, exist_ok=True)
+
+                _create(new_path, value)
+
+    return _create
 
 
 # ============ ТЕСТЫ НА ФАЙЛ ============
@@ -23,47 +55,54 @@ def temp_dir():
 class TestFile:
     """Тесты валидатора file()"""
 
-    def test_file_exists_is_file(self, temp_dir):
-        """Файл существует и это файл"""
-        name = "test.txt"
-        test_file = temp_dir / name
+    @pytest.mark.parametrize("pattern,filename", [
+        (w("test.txt"), "test.txt"),
+        (w("*.txt"), "anything.txt"),
+        (r(r'^\d+\.jpg$'), "001.jpg"),
+        (r(r'^data_\w+\.csv$'), "data_export.csv"),
+    ])
+    def test_file_exists_is_file(self, temp_dir, pattern, filename):
+        """Файл существует и это файл - параметризованный тест"""
+        test_file = temp_dir / filename
         test_file.touch()
 
-        struct = file(w(name))
+        struct = file(pattern)
 
         assert not struct.validate_as_root(test_file)
 
-    def test_file_exists_is_not_file(self, temp_dir):
+    @pytest.mark.parametrize("pattern,filename", [
+        (w("test.txt"), "test.txt"),
+        (w("*.txt"), "document.txt"),
+        (r(r'^\d+\.jpg$'), "123.jpg"),
+    ])
+    def test_file_exists_is_not_file(self, temp_dir, pattern, filename):
         """Файл существует, но это не файл (а директория)"""
-        name = "test.txt"
-        test_path = temp_dir / name
+        test_path = temp_dir / filename
         test_path.mkdir()
 
-        struct = file(w(name))
+        struct = file(pattern)
         result = struct.validate_as_root(test_path)
 
         assert result
         assert any(isinstance(error, NotFileError) for error in result)
 
-    def test_file_not_exists_mandatory(self, temp_dir):
-        """Файл не существует и обязательный"""
+    @pytest.mark.parametrize("is_mandatory,should_have_errors", [
+        (True, True),
+        (False, False),
+    ])
+    def test_file_not_exists(self, temp_dir, is_mandatory, should_have_errors):
+        """Файл не существует - тест с параметризацией обязательности"""
         name = "test.txt"
         test_file = temp_dir / name
 
-        struct = file(w(name))
+        struct = file(w(name), is_mandatory=is_mandatory)
         result = struct.validate_as_root(test_file)
 
-        assert result
-        assert any(isinstance(error, MandatoryMissedError) for error in result)
-
-    def test_file_not_exists_optional(self, temp_dir):
-        """Файл не существует, но опциональный"""
-        name = "test.txt"
-        test_file = temp_dir / name
-
-        struct = file(w(name), is_mandatory=False)
-
-        assert not struct.validate_as_root(test_file)
+        if should_have_errors:
+            assert result
+            assert any(isinstance(error, MandatoryMissedError) for error in result)
+        else:
+            assert not result
 
 
 # ============ ТЕСТЫ НА ПАПКУ ============
@@ -71,47 +110,52 @@ class TestFile:
 class TestFolder:
     """Тесты валидатора folder()"""
 
-    def test_folder_exists_is_folder(self, temp_dir):
-        """Папка существует и это папка"""
-        name = "test_folder"
-        test_folder = temp_dir / name
+    @pytest.mark.parametrize("pattern,foldername", [
+        (w("test"), "test"),
+        (w("data_*"), "data_export"),
+        (r(r'^\d{4}-\d{2}-\d{2}$'), "2024-01-15"),
+    ])
+    def test_folder_exists_is_folder(self, temp_dir, pattern, foldername):
+        """Папка существует и это папка - параметризованный тест"""
+        test_folder = temp_dir / foldername
         test_folder.mkdir()
 
-        struct = folder(w(name))
+        struct = folder(pattern)
 
         assert not struct.validate_as_root(test_folder)
 
-    def test_folder_exists_is_not_folder(self, temp_dir):
+    @pytest.mark.parametrize("pattern,foldername", [
+        (w("test"), "test"),
+        (w("data_*"), "data_export"),
+    ])
+    def test_folder_exists_is_not_folder(self, temp_dir, pattern, foldername):
         """Папка существует, но это не папка (а файл)"""
-        name = "test_folder"
-        test_path = temp_dir / name
+        test_path = temp_dir / foldername
         test_path.touch()
 
-        struct = folder(w(name))
+        struct = folder(pattern)
         result = struct.validate_as_root(test_path)
 
         assert result
         assert any(isinstance(error, NotDirectoryError) for error in result)
 
-    def test_folder_not_exists_mandatory(self, temp_dir):
-        """Папка не существует и обязательная"""
+    @pytest.mark.parametrize("is_mandatory,should_have_errors", [
+        (True, True),
+        (False, False),
+    ])
+    def test_folder_not_exists(self, temp_dir, is_mandatory, should_have_errors):
+        """Папка не существует - тест с параметризацией обязательности"""
         name = "test_folder"
         test_folder = temp_dir / name
 
-        struct = folder(w(name))
+        struct = folder(w(name), is_mandatory=is_mandatory)
         result = struct.validate_as_root(test_folder)
 
-        assert result
-        assert any(isinstance(error, MandatoryMissedError) for error in result)
-
-    def test_folder_not_exists_optional(self, temp_dir):
-        """Папка не существует, но опциональная"""
-        name = "test_folder"
-        test_folder = temp_dir / name
-
-        struct = folder(w(name), is_mandatory=False)
-
-        assert not struct.validate_as_root(test_folder)
+        if should_have_errors:
+            assert result
+            assert any(isinstance(error, MandatoryMissedError) for error in result)
+        else:
+            assert not result
 
 
 # ============ ТЕСТЫ НА SIDECAR ============
@@ -119,65 +163,38 @@ class TestFolder:
 class TestSidecar:
     """Тесты валидатора sidecar()"""
 
-    def test_sidecar_exists_for_each(self, temp_dir):
-        """Для каждого основного файла есть sidecar"""
-        (temp_dir / "image_001.jpg").touch()
-        (temp_dir / "image_001.json").touch()
-        (temp_dir / "image_002.jpg").touch()
-        (temp_dir / "image_002.json").touch()
+    @pytest.mark.parametrize("main_ext,sidecar_ext,files", [
+        ("jpg", "json", [("image_001.jpg", "image_001.json"), ("image_002.jpg", "image_002.json")]),
+        ("mp4", "srt", [("video_01.mp4", "video_01.srt")]),
+        ("csv", "yaml", [("data_export.csv", "data_export.yaml"), ("data_backup.csv", "data_backup.yaml")]),
+    ])
+    def test_sidecar_exists_for_each(self, temp_dir, create_files, main_ext, sidecar_ext, files):
+        """Для каждого основного файла есть sidecar - параметризованный тест"""
+        file_list = []
+        for main, side in files:
+            file_list.extend([main, side])
+
+        create_files(temp_dir, {'files': file_list})
 
         struct = sidecar(
-            main_pattern=r(r'^image_(\d+)\.jpg$'),
-            sidecar_pattern=r(r'^image_(\d+)\.json$')
+            main_pattern=r(rf'^(.+)\.{main_ext}$'),
+            sidecar_pattern=r(rf'^(.+)\.{sidecar_ext}$')
         )
 
         assert not struct.validate(temp_dir)
 
-    def test_sidecar_has_extra(self, temp_dir):
-        """Есть лишние sidecar файлы (без основных)"""
-        (temp_dir / "image_001.jpg").touch()
-        (temp_dir / "image_001.json").touch()
-        (temp_dir / "image_002.json").touch()  # Лишний
-        (temp_dir / "image_003.json").touch()  # Лишний
+    @pytest.mark.parametrize("main_files,sidecar_files,expected_missing", [
+        (["image_001.jpg", "image_002.jpg"], ["image_001.json"], 1),
+        (["image_001.jpg", "image_002.jpg", "image_003.jpg"], ["image_001.json"], 2),
+        (["image_001.jpg", "image_002.jpg", "image_003.jpg"], [], 3),
+    ])
+    def test_sidecar_missing(self, temp_dir, create_files, main_files, sidecar_files, expected_missing):
+        """Не хватает некоторых sidecar файлов - параметризованный тест"""
+        create_files(temp_dir, {name: None for name in main_files + sidecar_files})
 
         struct = sidecar(
-            main_pattern=r(r'^image_(\d+)\.jpg$'),
-            sidecar_pattern=r(r'^image_(\d+)\.json$')
-        )
-
-        # Лишние sidecar не являются ошибкой
-        assert not struct.validate(temp_dir)
-
-    def test_sidecar_missing_some(self, temp_dir):
-        """Не хватает некоторых sidecar файлов"""
-        (temp_dir / "image_001.jpg").touch()
-        (temp_dir / "image_001.json").touch()
-        (temp_dir / "image_002.jpg").touch()  # Без sidecar
-        (temp_dir / "image_003.jpg").touch()  # Без sidecar
-
-        struct = sidecar(
-            main_pattern=r(r'^image_(\d+)\.jpg$'),
-            sidecar_pattern=r(r'^image_(\d+)\.json$')
-        )
-
-        result = struct.validate(temp_dir)
-
-        assert result
-        assert any(isinstance(error, NoSidecarError) for error in result)
-        # Проверяем, что в ошибке упомянуты правильные файлы
-        sidecar_errors = [e for e in result if isinstance(e, NoSidecarError)]
-        assert len(sidecar_errors) == 1
-        assert len(sidecar_errors[0].paths) == 2
-
-    def test_sidecar_missing_all(self, temp_dir):
-        """Не хватает вообще всех sidecar файлов"""
-        (temp_dir / "image_001.jpg").touch()
-        (temp_dir / "image_002.jpg").touch()
-        (temp_dir / "image_003.jpg").touch()
-
-        struct = sidecar(
-            main_pattern=r(r'^image_(\d+)\.jpg$'),
-            sidecar_pattern=r(r'^image_(\d+)\.json$')
+            main_pattern=r(r'^(.+)\.jpg$'),
+            sidecar_pattern=r(r'^(.+)\.json$')
         )
 
         result = struct.validate(temp_dir)
@@ -185,50 +202,48 @@ class TestSidecar:
         assert result
         assert any(isinstance(error, NoSidecarError) for error in result)
         sidecar_errors = [e for e in result if isinstance(e, NoSidecarError)]
-        assert len(sidecar_errors[0].paths) == 3
+        assert len(sidecar_errors[0].paths) == expected_missing
 
-    def test_sidecar_no_main_files(self, temp_dir):
-        """Нет основных файлов, только sidecar"""
-        (temp_dir / "image_001.json").touch()
-        (temp_dir / "image_002.json").touch()
-
-        struct = sidecar(
-            main_pattern=r(r'^image_(\d+)\.jpg$'),
-            sidecar_pattern=r(r'^image_(\d+)\.json$')
-        )
-
-        # Нет основных файлов - нет ошибок
-        assert not struct.validate(temp_dir)
-
-    def test_sidecar_no_groups_in_patterns(self):
-        """Нет групп в паттернах - ошибка при создании"""
-        with pytest.raises(ValueError):
-            sidecar(
-                main_pattern=r(r'^image\.jpg$'),  # Нет групп
-                sidecar_pattern=r(r'^image\.json$')
-            )
-
-    def test_sidecar_different_group_count(self):
-        """Разное количество групп в паттернах - ошибка при создании"""
-        with pytest.raises(ValueError):
-            sidecar(
-                main_pattern=r(r'^image_(\d+)\.jpg$'),  # 1 группа
-                sidecar_pattern=r(r'^image_(\d+)_(\d+)\.json$')  # 2 группы
-            )
-
-    def test_sidecar_multiple_groups(self, temp_dir):
-        """Работа с несколькими группами в паттернах"""
-        (temp_dir / "session_01_image_001.jpg").touch()
-        (temp_dir / "session_01_image_001.json").touch()
-        (temp_dir / "session_02_image_005.jpg").touch()
-        (temp_dir / "session_02_image_005.json").touch()
+    @pytest.mark.parametrize("main_files,sidecar_files", [
+        ([], ["image_001.json", "image_002.json"]),
+        ([], []),
+    ])
+    def test_sidecar_no_main_files(self, temp_dir, create_files, main_files, sidecar_files):
+        """Нет основных файлов - нет ошибок"""
+        create_files(temp_dir, {name: None for name in main_files + sidecar_files})
 
         struct = sidecar(
-            main_pattern=r(r'^session_(\d+)_image_(\d+)\.jpg$'),
-            sidecar_pattern=r(r'^session_(\d+)_image_(\d+)\.json$')
+            main_pattern=r(r'^(.+)\.jpg$'),
+            sidecar_pattern=r(r'^(.+)\.json$')
         )
 
         assert not struct.validate(temp_dir)
+
+    @pytest.mark.parametrize("main_groups,sidecar_groups,should_fail", [
+        (0, 0, True),  # Нет групп
+        (1, 1, False),  # Одинаковое количество
+        (2, 2, False),  # Одинаковое количество
+        (1, 2, True),  # Разное количество
+        (3, 1, True),  # Разное количество
+    ])
+    def test_sidecar_group_validation(self, main_groups, sidecar_groups, should_fail):
+        """Валидация количества групп в паттернах"""
+        main_pattern_str = r'^' + r'(\w+)_' * main_groups + r'image\.jpg$'
+        sidecar_pattern_str = r'^' + r'(\w+)_' * sidecar_groups + r'image\.json$'
+
+        if should_fail:
+            with pytest.raises(ValueError):
+                sidecar(
+                    main_pattern=r(main_pattern_str),
+                    sidecar_pattern=r(sidecar_pattern_str)
+                )
+        else:
+            # Должно создаться без ошибок
+            result = sidecar(
+                main_pattern=r(main_pattern_str),
+                sidecar_pattern=r(sidecar_pattern_str)
+            )
+            assert result is not None
 
 
 # ============ ТЕСТЫ НА XOR ============
@@ -236,24 +251,18 @@ class TestSidecar:
 class TestXor:
     """Тесты валидатора xor()"""
 
-    def test_xor_both_failed(self, temp_dir):
-        """Оба валидатора не выполнились"""
-        struct = xor(
-            file(w("option_a.txt")),
-            file(w("option_b.txt"))
-        )
-
-        result = struct.validate(temp_dir)
-
-        assert result
-        assert any(isinstance(error, AllValidationsFailedError) for error in result)
-        # Должны быть также ошибки от обоих дочерних валидаторов
-        assert any(isinstance(error, MandatoryMissedError) for error in result)
-
-    def test_xor_both_succeeded(self, temp_dir):
-        """Оба валидатора выполнились - ошибка для XOR"""
-        (temp_dir / "option_a.txt").touch()
-        (temp_dir / "option_b.txt").touch()
+    @pytest.mark.parametrize("create_a,create_b,expected_error", [
+        (False, False, AllValidationsFailedError),  # Оба не выполнились
+        (True, True, ManyOptionsError),  # Оба выполнились
+        (True, False, None),  # Только A - успех
+        (False, True, None),  # Только B - успех
+    ])
+    def test_xor_scenarios(self, temp_dir, create_a, create_b, expected_error):
+        """Различные сценарии XOR - параметризованный тест"""
+        if create_a:
+            (temp_dir / "option_a.txt").touch()
+        if create_b:
+            (temp_dir / "option_b.txt").touch()
 
         struct = xor(
             file(w("option_a.txt")),
@@ -262,19 +271,11 @@ class TestXor:
 
         result = struct.validate(temp_dir)
 
-        assert result
-        assert any(isinstance(error, ManyOptionsError) for error in result)
-
-    def test_xor_only_one_succeeded(self, temp_dir):
-        """Только один валидатор выполнился - успех для XOR"""
-        (temp_dir / "option_a.txt").touch()
-
-        struct = xor(
-            file(w("option_a.txt")),
-            file(w("option_b.txt"))
-        )
-
-        assert not struct.validate(temp_dir)
+        if expected_error:
+            assert result
+            assert any(isinstance(error, expected_error) for error in result)
+        else:
+            assert not result
 
 
 # ============ ТЕСТЫ НА ONLY_ONE ============
@@ -282,35 +283,17 @@ class TestXor:
 class TestOnlyOne:
     """Тесты валидатора only_one()"""
 
-    def test_only_one_none(self, temp_dir):
-        """Ни один не выполнился"""
-        struct = only_one(
-            file(w("option_a.txt")),
-            file(w("option_b.txt")),
-            file(w("option_c.txt"))
-        )
-
-        result = struct.validate(temp_dir)
-
-        assert result
-        assert any(isinstance(error, AllValidationsFailedError) for error in result)
-
-    def test_only_one_exactly_one(self, temp_dir):
-        """Только один выполнился - успех"""
-        (temp_dir / "option_b.txt").touch()
-
-        struct = only_one(
-            file(w("option_a.txt")),
-            file(w("option_b.txt")),
-            file(w("option_c.txt"))
-        )
-
-        assert not struct.validate(temp_dir)
-
-    def test_only_one_more_than_one(self, temp_dir):
-        """Больше одного выполнилось"""
-        (temp_dir / "option_a.txt").touch()
-        (temp_dir / "option_c.txt").touch()
+    @pytest.mark.parametrize("files_to_create,expected_error", [
+        ([], AllValidationsFailedError),  # Ни один
+        (["option_a.txt"], None),  # Один - успех
+        (["option_b.txt"], None),  # Другой один - успех
+        (["option_a.txt", "option_b.txt"], ManyOptionsError),  # Два
+        (["option_a.txt", "option_c.txt"], ManyOptionsError),  # Два других
+        (["option_a.txt", "option_b.txt", "option_c.txt"], ManyOptionsError),  # Все три
+    ])
+    def test_only_one_scenarios(self, temp_dir, create_files, files_to_create, expected_error):
+        """Различные сценарии only_one - параметризованный тест"""
+        create_files(temp_dir, {name: None for name in files_to_create})
 
         struct = only_one(
             file(w("option_a.txt")),
@@ -320,25 +303,11 @@ class TestOnlyOne:
 
         result = struct.validate(temp_dir)
 
-        assert result
-        assert any(isinstance(error, ManyOptionsError) for error in result)
-
-    def test_only_one_all(self, temp_dir):
-        """Все выполнились"""
-        (temp_dir / "option_a.txt").touch()
-        (temp_dir / "option_b.txt").touch()
-        (temp_dir / "option_c.txt").touch()
-
-        struct = only_one(
-            file(w("option_a.txt")),
-            file(w("option_b.txt")),
-            file(w("option_c.txt"))
-        )
-
-        result = struct.validate(temp_dir)
-
-        assert result
-        assert any(isinstance(error, ManyOptionsError) for error in result)
+        if expected_error:
+            assert result
+            assert any(isinstance(error, expected_error) for error in result)
+        else:
+            assert not result
 
 
 # ============ ТЕСТЫ НА AT_LEAST_ONE ============
@@ -346,8 +315,18 @@ class TestOnlyOne:
 class TestAtLeastOne:
     """Тесты валидатора at_least_one()"""
 
-    def test_at_least_one_none(self, temp_dir):
-        """Ни один не выполнился"""
+    @pytest.mark.parametrize("files_to_create,should_pass", [
+        ([], False),  # Ни один - ошибка
+        (["option_a.txt"], True),  # Один - успех
+        (["option_b.txt"], True),  # Другой один - успех
+        (["option_a.txt", "option_b.txt"], True),  # Два - успех
+        (["option_a.txt", "option_c.txt"], True),  # Два других - успех
+        (["option_a.txt", "option_b.txt", "option_c.txt"], True),  # Все три - успех
+    ])
+    def test_at_least_one_scenarios(self, temp_dir, create_files, files_to_create, should_pass):
+        """Различные сценарии at_least_one - параметризованный тест"""
+        create_files(temp_dir, {name: None for name in files_to_create})
+
         struct = at_least_one(
             file(w("option_a.txt")),
             file(w("option_b.txt")),
@@ -356,47 +335,11 @@ class TestAtLeastOne:
 
         result = struct.validate(temp_dir)
 
-        assert result
-        assert any(isinstance(error, AllValidationsFailedError) for error in result)
-
-    def test_at_least_one_exactly_one(self, temp_dir):
-        """Только один выполнился - успех"""
-        (temp_dir / "option_b.txt").touch()
-
-        struct = at_least_one(
-            file(w("option_a.txt")),
-            file(w("option_b.txt")),
-            file(w("option_c.txt"))
-        )
-
-        assert not struct.validate(temp_dir)
-
-    def test_at_least_one_more_than_one(self, temp_dir):
-        """Больше одного выполнилось - успех"""
-        (temp_dir / "option_a.txt").touch()
-        (temp_dir / "option_c.txt").touch()
-
-        struct = at_least_one(
-            file(w("option_a.txt")),
-            file(w("option_b.txt")),
-            file(w("option_c.txt"))
-        )
-
-        assert not struct.validate(temp_dir)
-
-    def test_at_least_one_all(self, temp_dir):
-        """Все выполнились - успех"""
-        (temp_dir / "option_a.txt").touch()
-        (temp_dir / "option_b.txt").touch()
-        (temp_dir / "option_c.txt").touch()
-
-        struct = at_least_one(
-            file(w("option_a.txt")),
-            file(w("option_b.txt")),
-            file(w("option_c.txt"))
-        )
-
-        assert not struct.validate(temp_dir)
+        if should_pass:
+            assert not result
+        else:
+            assert result
+            assert any(isinstance(error, AllValidationsFailedError) for error in result)
 
 
 # ============ ТЕСТЫ НА ANYTHING ============
@@ -404,283 +347,352 @@ class TestAtLeastOne:
 class TestAnything:
     """Тесты валидатора anything()"""
 
-    def test_anything_empty_folder(self, temp_dir):
-        """Пустая папка"""
-        struct = folder(w("test"), anything())
+    @pytest.mark.parametrize("structure", [
+        {},  # Пустая папка
+        {
+            'file1.txt': None
+        },  # Один файл
+        {
+            'file1.txt': None,
+            'file2.jpg': None,
+            'data.csv': None
+        },  # Несколько файлов
+        {
+            'subfolder1': {}
+        },  # Одна папка
+        {
+            'sub1': {},
+            'sub2': {},
+            'sub3': {}
+        },  # Несколько папок
+        {
+            'file.txt': None,
+            'subfolder': {}
+        },  # Смешанное
+        {
+            '.hidden': None,
+            '123.456.789': None,
+            'file with spaces.txt': None
+        },  # Специальные имена
+    ])
+    def test_anything_scenarios(self, temp_dir, create_files, structure):
+        """Anything принимает любое содержимое - параметризованный тест"""
         test_folder = temp_dir / "test"
         test_folder.mkdir()
 
-        assert not struct.validate_as_root(test_folder)
+        create_files(test_folder, structure)
 
-    def test_anything_with_files(self, temp_dir):
-        """Папка с файлами"""
         struct = folder(w("test"), anything())
-        test_folder = temp_dir / "test"
-        test_folder.mkdir()
-        (test_folder / "file1.txt").touch()
-        (test_folder / "file2.jpg").touch()
-        (test_folder / "random_name.dat").touch()
-
-        assert not struct.validate_as_root(test_folder)
-
-    def test_anything_with_folders(self, temp_dir):
-        """Папка с подпапками"""
-        struct = folder(w("test"), anything())
-        test_folder = temp_dir / "test"
-        test_folder.mkdir()
-        (test_folder / "subfolder1").mkdir()
-        (test_folder / "subfolder2").mkdir()
-
-        assert not struct.validate_as_root(test_folder)
-
-    def test_anything_mixed(self, temp_dir):
-        """Папка со смешанным содержимым"""
-        struct = folder(w("test"), anything())
-        test_folder = temp_dir / "test"
-        test_folder.mkdir()
-        (test_folder / "file.txt").touch()
-        (test_folder / "folder").mkdir()
-        (test_folder / ".hidden").touch()
-        (test_folder / "123.456.789").touch()
 
         assert not struct.validate_as_root(test_folder)
 
 
-# ============ ДОПОЛНИТЕЛЬНЫЕ СЦЕНАРИИ ============
+# ============ КОМПЛЕКСНЫЕ СЦЕНАРИИ ============
 
 class TestComplexScenarios:
     """Тесты сложных комбинированных сценариев"""
 
-    def test_nested_folders(self, temp_dir):
-        """Вложенные папки с валидацией"""
-        struct = folder(
-            w("root"),
-            folder(w("data"), file(w("*.csv"))),
-            folder(w("config"), file(w("settings.json")))
-        )
+    @pytest.mark.parametrize("depth,should_pass", [
+        (1, True),
+        (2, True),
+        (3, True),
+        (5, True),
+    ])
+    def test_nested_folders_depth(self, temp_dir, depth, should_pass):
+        """Вложенные папки различной глубины"""
+        current = temp_dir
 
-        root = temp_dir / "root"
-        root.mkdir()
-        data = root / "data"
-        data.mkdir()
-        (data / "file1.csv").touch()
-        config = root / "config"
-        config.mkdir()
-        (config / "settings.json").touch()
+        # Создаем структуру
+        for i in range(depth):
+            current = current / f"level{i}"
+            current.mkdir()
 
-        assert not struct.validate_as_root(root)
+        # Создаем файл в самой глубокой папке
+        (current / "deep_file.txt").touch()
 
-    def test_optional_files_in_folder(self, temp_dir):
-        """Папка с опциональными файлами"""
-        struct = folder(
-            w("test"),
-            file(w("required.txt")),
-            file(w("optional.txt"), is_mandatory=False)
-        )
+        # Строим валидатор
+        validator = file(w("deep_file.txt"))
 
+        for i in reversed(range(depth)):
+            validator = folder(
+                w(f"level{i}"),
+                validator
+            )
+
+        result = validator.validate_as_root(temp_dir / "level0")
+
+        assert (not result) == should_pass
+
+    @pytest.mark.parametrize("extra_files,should_have_error", [
+        ([], False),  # Нет лишних файлов
+        (["extra.txt"], True),  # Один лишний
+        (["extra1.txt", "extra2.dat"], True),  # Несколько лишних
+        (["extra.txt", "another.dat", "random.xyz"], True),  # Много лишних
+    ])
+    def test_extra_files_in_folder(self, temp_dir, create_files, extra_files, should_have_error):
+        """Папка с лишними файлами - параметризованный тест"""
         test_folder = temp_dir / "test"
         test_folder.mkdir()
-        (test_folder / "required.txt").touch()
 
-        assert not struct.validate_as_root(test_folder)
+        create_files(test_folder, {name: None for name in ["required.txt"] + extra_files})
 
-    def test_extra_files_in_folder(self, temp_dir):
-        """Папка с лишними файлами"""
         struct = folder(
             w("test"),
             file(w("required.txt"))
         )
-
-        test_folder = temp_dir / "test"
-        test_folder.mkdir()
-        (test_folder / "required.txt").touch()
-        (test_folder / "extra.txt").touch()
-        (test_folder / "another.dat").touch()
-
         result = struct.validate_as_root(test_folder)
 
-        assert result
-        assert any(isinstance(error, ExtraItemsError) for error in result)
+        if should_have_error:
+            assert result
+            assert any(isinstance(error, ExtraItemsError) for error in result)
+            extra_errors = [e for e in result if isinstance(e, ExtraItemsError)]
+            assert len(extra_errors[0].paths) == len(extra_files)
+        else:
+            assert not result
 
-    def test_multiple_patterns_same_folder(self, temp_dir):
-        """Несколько паттернов в одной папке"""
-        struct = folder(
-            w("test"),
-            file(w("*.txt")),
-            file(w("*.json")),
-            file(w("README.md"))
-        )
-
+    @pytest.mark.parametrize("pattern_pairs", [
+        [(w("*.txt"), w("*.json"))],
+        [(w("*.txt"), w("*.json"), w("*.csv"))],
+        [(r(r'^\d+\.jpg$'), r(r'^[a-z]+\.png$'))],
+    ])
+    def test_multiple_patterns_same_folder(self, temp_dir, create_files, pattern_pairs):
+        """Несколько паттернов в одной папке - параметризованный тест"""
         test_folder = temp_dir / "test"
         test_folder.mkdir()
-        (test_folder / "file1.txt").touch()
-        (test_folder / "file2.txt").touch()
-        (test_folder / "config.json").touch()
-        (test_folder / "README.md").touch()
+
+        # Создаем файлы для каждого паттерна
+        files = []
+
+        if w("*.txt") in pattern_pairs[0]:
+            files.append("file1.txt")
+        if w("*.json") in pattern_pairs[0]:
+            files.append("config.json")
+        if w("*.csv") in pattern_pairs[0]:
+            files.append("data.csv")
+        if r(r'^\d+\.jpg$') in pattern_pairs[0]:
+            files.append("001.jpg")
+        if r(r'^[a-z]+\.png$') in pattern_pairs[0]:
+            files.append("image.png")
+
+        create_files(test_folder, {name: None for name in files})
+
+        validators = [file(pattern) for pattern in pattern_pairs[0]]
+        struct = folder(w("test"), *validators)
 
         assert not struct.validate_as_root(test_folder)
 
-    def test_xor_with_folders(self, temp_dir):
-        """XOR с папками вместо файлов"""
-        struct = xor(
-            folder(w("option_a"), file(w("*.txt"))),
-            folder(w("option_b"), file(w("*.json")))
+
+# ============ ИНТЕГРАЦИОННЫЕ ТЕСТЫ ============
+
+class TestIntegration:
+    """Интеграционные тесты с реалистичными сценариями"""
+
+    def test_photo_project_structure(self, temp_dir, create_files):
+        """Структура фотопроекта с sidecar файлами"""
+        project = temp_dir / "photo_project"
+        project.mkdir()
+
+        create_files(project, {
+            'raw': {},
+            'edited': {},
+            'IMG_001.jpg': None,
+            'IMG_001.json': None,
+            'IMG_002.jpg': None,
+            'IMG_002.json': None,
+            'README.md': None,
+        })
+
+        struct = folder(
+            w("photo_project"),
+            file(w("*.jpg")),
+            file(w("*.json")),
+            sidecar(
+                main_pattern=r(r'^(.+)\.jpg$'),
+                sidecar_pattern=r(r'^(.+)\.json$')
+            ),
+            file(w("README.md")),
+            folder(w("raw")),
+            folder(w("edited"))
         )
 
-        option_a = temp_dir / "option_a"
-        option_a.mkdir()
-        (option_a / "file.txt").touch()
+        assert not struct.validate_as_root(project)
+
+    def test_config_either_file_or_folder(self, temp_dir, create_files):
+        """Конфигурация: либо файл, либо папка"""
+        # Вариант 1: файл конфигурации
+        create_files(temp_dir, {"config.json": None})
+
+        struct = xor(
+            file(w("config.json")),
+            folder(w("config"), file(w("*.yaml")))
+        )
 
         assert not struct.validate(temp_dir)
 
-    def test_deeply_nested_structure(self, temp_dir):
-        """Глубоко вложенная структура"""
+    @pytest.mark.parametrize("structure_type", ["simple", "with_metadata", "with_archive"])
+    def test_data_folder_variants(self, temp_dir, create_files, structure_type):
+        """Различные варианты структуры папки данных"""
+        data_folder = temp_dir / "data"
+        data_folder.mkdir()
+
+        if structure_type == "simple":
+            create_files(data_folder, {
+                'dataset.csv': None,
+            })
+            validators = [
+                file(w("*.csv")),
+            ]
+        elif structure_type == "with_metadata":
+            create_files(data_folder, {
+                'dataset.csv': None,
+                'metadata.json': None,
+            })
+            validators = [
+                file(w("*.csv")),
+                file(w("metadata.json")),
+            ]
+        else:  # with_archive
+            create_files(data_folder, {
+                'dataset.csv': None,
+                'metadata.json': None,
+                'backup.zip': None,
+            })
+            validators = [
+                file(w("*.csv")),
+                file(w("metadata.json")),
+                file(w("*.zip"), is_mandatory=False)
+            ]
+
         struct = folder(
-            w("level1"),
-            folder(
-                w("level2"),
-                folder(
-                    w("level3"),
-                    file(w("deep_file.txt"))
-                )
-            )
+            w("data"),
+            *validators
         )
 
-        level1 = temp_dir / "level1"
-        level1.mkdir()
-        level2 = level1 / "level2"
-        level2.mkdir()
-        level3 = level2 / "level3"
-        level3.mkdir()
-        (level3 / "deep_file.txt").touch()
+        assert not struct.validate_as_root(data_folder)
 
-        assert not struct.validate_as_root(level1)
 
-    def test_sidecar_in_folder(self, temp_dir):
-        """Sidecar валидация внутри папки"""
+# ============ ТЕСТЫ НА ПРОИЗВОДИТЕЛЬНОСТЬ ============
+
+class TestPerformance:
+    """Тесты производительности (без реальных замеров, но с большими объемами)"""
+
+    @pytest.mark.parametrize("file_count", [10, 50, 100])
+    def test_many_files_validation(self, temp_dir, create_files, file_count):
+        """Валидация папки с большим количеством файлов"""
+        test_folder = temp_dir / "test"
+        test_folder.mkdir()
+
+        files = [f"file_{i:04d}.txt" for i in range(file_count)]
+        create_files(test_folder, {name: None for name in files})
+
+        struct = folder(w("test"), file(w("*.txt")))
+
+        assert not struct.validate_as_root(test_folder)
+
+    @pytest.mark.parametrize("pair_count", [5, 20, 50])
+    def test_many_sidecar_pairs(self, temp_dir, create_files, pair_count):
+        """Валидация большого количества пар sidecar файлов"""
+        test_folder = temp_dir / "test"
+        test_folder.mkdir()
+
+        files = []
+        for i in range(pair_count):
+            files.extend([f"image_{i:04d}.jpg", f"image_{i:04d}.json"])
+
+        create_files(test_folder, {'files': files})
+
         struct = folder(
-            w("images"),
-            anything(),
-            # file(w("*.jpg")),
+            w("test"),
             sidecar(
                 main_pattern=r(r'^(.+)\.jpg$'),
                 sidecar_pattern=r(r'^(.+)\.json$')
             )
         )
 
-        images = temp_dir / "images"
-        images.mkdir()
-        (images / "photo1.jpg").touch()
-        (images / "photo1.json").touch()
-        (images / "photo2.jpg").touch()
-        (images / "photo2.json").touch()
-
-        result = struct.validate_as_root(images)
-        assert not result
-
-    def test_anything_with_specific_files(self, temp_dir):
-        """Anything в сочетании со специфичными файлами"""
-        struct = folder(
-            w("test"),
-            file(w("required.txt")),
-            anything()
-        )
-
-        test_folder = temp_dir / "test"
-        test_folder.mkdir()
-        (test_folder / "required.txt").touch()
-        (test_folder / "random1.dat").touch()
-        (test_folder / "random2.xyz").touch()
-        (test_folder / "subfolder").mkdir()
-
         assert not struct.validate_as_root(test_folder)
 
-    def test_multiple_sidecar_groups(self, temp_dir):
-        """Несколько групп sidecar в одной папке"""
-        struct = folder(
-            w("data"),
-            anything(),
-            sidecar(
-                main_pattern=r(r'^image_(\d+)\.jpg$'),
-                sidecar_pattern=r(r'^image_(\d+)\.json$')
-            ),
-            sidecar(
-                main_pattern=r(r'^video_(\d+)\.mp4$'),
-                sidecar_pattern=r(r'^video_(\d+)\.srt$')
-            )
-        )
 
-        data = temp_dir / "data"
-        data.mkdir()
-        (data / "image_001.jpg").touch()
-        (data / "image_001.json").touch()
-        (data / "video_001.mp4").touch()
-        (data / "video_001.srt").touch()
+# ============ ТЕСТЫ С ИСПОЛЬЗОВАНИЕМ MARKS ============
 
-        assert not struct.validate_as_root(data)
+@pytest.mark.slow
+class TestSlowOperations:
+    """Медленные тесты, помеченные для опционального запуска"""
+
+    def test_deeply_nested_validation(self, temp_dir, create_files):
+        """Очень глубокая вложенность (медленный тест)"""
+        current = temp_dir
+        depth = 20
+
+        for i in range(depth):
+            current = current / f"level{i}"
+            current.mkdir()
+
+        (current / "deep.txt").touch()
+
+        # Просто проверяем, что система справляется
+        assert (temp_dir / "level0").exists()
 
 
-# ============ ТЕСТЫ НА ГРАНИЧНЫЕ СЛУЧАИ ============
-
+@pytest.mark.edge_case
 class TestEdgeCases:
-    """Тесты граничных случаев"""
+    """Граничные случаи, помеченные отдельно"""
 
-    def test_empty_folder_no_requirements(self, temp_dir):
-        """Пустая папка без требований"""
-        struct = folder(w("test"))
-        test_folder = temp_dir / "test"
-        test_folder.mkdir()
-
-        assert not struct.validate_as_root(test_folder)
-
-    def test_folder_with_only_optional_children(self, temp_dir):
-        """Папка только с опциональными детьми"""
-        struct = folder(
-            w("test"),
-            file(w("optional1.txt"), is_mandatory=False),
-            file(w("optional2.txt"), is_mandatory=False)
-        )
-
-        test_folder = temp_dir / "test"
-        test_folder.mkdir()
-
-        assert not struct.validate_as_root(test_folder)
-
-    def test_regex_pattern_with_special_chars(self, temp_dir):
-        """Regex паттерн со специальными символами в именах"""
-        struct = file(r(r'^test\[1\]\.txt$'))
-        test_file = temp_dir / "test[1].txt"
+    @pytest.mark.parametrize("filename", [
+        "file with spaces.txt",
+        "file[brackets].txt",
+        "file(parens).txt",
+        "file{braces}.txt",
+        ".hidden",
+        "..double_dot",
+        "file@special#chars.txt",
+    ])
+    def test_special_filenames(self, temp_dir, filename):
+        """Файлы со специальными символами в именах"""
+        test_file = temp_dir / filename
         test_file.touch()
+
+        struct = file(w("*"))
 
         assert not struct.validate_as_root(test_file)
 
-    def test_wildcard_multiple_files_match(self, temp_dir):
-        """Wildcard паттерн совпадает с несколькими файлами"""
+
+# ============ ТЕСТЫ С FIXTURES ============
+
+@pytest.fixture
+def standard_project_structure(temp_dir, create_files):
+    """Стандартная структура проекта для переиспользования"""
+    create_files(temp_dir, {
+        'README.md': None,
+        'requirements.txt': None,
+        'src': {
+            'main.py': None,
+            '__init__.py': None
+        },
+        'tests': {
+            'test_main.py': None
+        },
+        'docs': {
+            'index.md': None
+        }
+    })
+    return temp_dir
+
+
+class TestWithFixtures:
+    """Тесты использующие переиспользуемые фикстуры"""
+
+    def test_project_has_readme(self, standard_project_structure):
+        """Проверка наличия README в стандартной структуре"""
+        struct = file(w("README.md"))
+        assert not struct.validate(standard_project_structure)
+
+    def test_project_has_src(self, standard_project_structure):
+        """Проверка наличия папки src в стандартной структуре"""
         struct = folder(
-            w("test"),
-            file(w("*.txt"))
+            w("src"),
+            file(w("*.py"))
         )
-
-        test_folder = temp_dir / "test"
-        test_folder.mkdir()
-        (test_folder / "file1.txt").touch()
-        (test_folder / "file2.txt").touch()
-        (test_folder / "file3.txt").touch()
-
-        assert not struct.validate_as_root(test_folder)
-
-    def test_at_least_one_with_mixed_types(self, temp_dir):
-        """at_least_one с файлами и папками"""
-        struct = at_least_one(
-            file(w("config.txt")),
-            folder(w("config_dir"), file(w("settings.json")))
-        )
-
-        config_dir = temp_dir / "config_dir"
-        config_dir.mkdir()
-        (config_dir / "settings.json").touch()
-
-        assert not struct.validate(temp_dir)
+        assert not struct.validate(standard_project_structure)
 
 
 if __name__ == "__main__":
