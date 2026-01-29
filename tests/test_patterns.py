@@ -1,6 +1,8 @@
 import re
 
 import pytest
+
+from src.functions import file, folder
 from src.pattern import RegexPattern, WildcardPattern, w, r, Pattern
 
 
@@ -8,9 +10,9 @@ from src.pattern import RegexPattern, WildcardPattern, w, r, Pattern
 
 @pytest.mark.parametrize(
     "pattern_class, pattern_str", [
-    (RegexPattern, r"^test\.txt$",),
-    (WildcardPattern, "test.txt",),
-])
+        (RegexPattern, r"^test\.txt$",),
+        (WildcardPattern, "test.txt",),
+    ])
 def test_pattern_protocol(pattern_class, pattern_str):
     """Тест, что оба класса реализуют протокол Pattern"""
     # Просто создаем экземпляры - если они создаются, значит, протокол соблюден
@@ -176,25 +178,29 @@ def test_pattern_immutability():
 
 def test_patterns_in_folder_structure():
     """Тест использования паттернов в структурах Folder"""
-    from v1.structure import File, Folder
 
     # Создаем структуру с разными типами паттернов
-    struct = Folder(
-        contents=[
-            (WildcardPattern("*.jpg"), File(is_mandatory=False)),
-            (RegexPattern(r"^_\w+\.json$"), File(is_mandatory=True)),
-            (WildcardPattern("data_??.txt"), File(is_mandatory=False)),
-        ],
-        is_mandatory=True
+    struct = folder(
+        w("*"),
+        file(
+            WildcardPattern("*.jpg"),
+            is_mandatory=False),
+        file(
+            RegexPattern(r"^_\w+\.json$"),
+            is_mandatory=True),
+        file(
+            WildcardPattern("data_??.txt"),
+            is_mandatory=False
+        ),
     )
 
     # Проверяем, что структура создана корректно
-    assert len(struct.contents) == 3
+    assert len(struct.children) == 3
 
     # Проверяем типы паттернов в структуре
-    for pattern, _ in struct.contents:
-        assert hasattr(pattern, 'matches')
-        assert callable(pattern.matches)
+    for child in struct.children:
+        assert hasattr(child, 'matches')
+        assert callable(child.matches)
 
 
 @pytest.mark.parametrize("pattern_maker, pattern_args, test_cases", [
@@ -304,14 +310,12 @@ def test_invalid_regex_pattern():
     assert pattern is not None
 
     # Более опасный случай - неправильный синтаксис
-    try:
+    with pytest.raises(ValueError):
         pattern = RegexPattern(r"^test[0-$")  # Некорректный диапазон
         # Если создался, проверяем, что не падает при использовании
         _ = pattern.matches("test1")
         # Результат может быть любым, главное - не исключение
-    except re.error:
-        # Это тоже приемлемо - раннее обнаружение ошибки
-        pass
+
 
 
 def test_pattern_repr():
