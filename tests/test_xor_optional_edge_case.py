@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from src.errors import ManyOptionsError, AllValidationsFailedError
-from src.functions import file, folder, xor, only_one, at_least_one
+from src.dsl import file, folder, xor, only_one, at_least_one
 from src.pattern import w
 
 

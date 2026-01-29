@@ -2,7 +2,7 @@ import re
 
 import pytest
 
-from src.functions import file, folder
+from src.dsl import file, folder
 from src.pattern import RegexPattern, WildcardPattern, w, r, Pattern
 
 
