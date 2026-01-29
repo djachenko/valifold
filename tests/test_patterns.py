@@ -183,14 +183,16 @@ def test_patterns_in_folder_structure():
     struct = folder(
         w("*"),
         file(
-            WildcardPattern("*.jpg"),
-            is_mandatory=False),
+            w("*.jpg"),
+            is_optional=True
+        ),
         file(
-            RegexPattern(r"^_\w+\.json$"),
-            is_mandatory=True),
+            r(r"^_\w+\.json$"),
+            is_optional=False
+        ),
         file(
-            WildcardPattern("data_??.txt"),
-            is_mandatory=False
+            w("data_??.txt"),
+            is_optional=True
         ),
     )
 

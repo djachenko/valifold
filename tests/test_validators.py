@@ -45,7 +45,7 @@ def test_file_doesnt_exist_optional(temp_dir):
 
     struct = file(
         w(name),
-        is_mandatory=False
+        is_optional=True
     )
 
     assert not struct.validate_as_root(test_file)

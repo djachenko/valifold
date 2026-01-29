@@ -29,7 +29,7 @@ class RootValidator(ABC):
 @dataclass(frozen=True)
 class SubstructureValidator(Validator, Matcher, RootValidator, ABC):
     pattern: Pattern
-    is_mandatory: bool
+    is_optional: bool
 
     def matches(self, name: str) -> bool:
         return self.pattern.matches(name)
@@ -43,7 +43,7 @@ class SubstructureValidator(Validator, Matcher, RootValidator, ABC):
                 count += 1
                 errors += self.validate_structure(child)
 
-        if count == 0 and self.is_mandatory:
+        if count == 0 and not self.is_optional:
             errors.append(MandatoryMissedError([parent], f"There is no match for '{self.pattern}' in '{{path}}'"))
 
         return errors
@@ -53,7 +53,7 @@ class SubstructureValidator(Validator, Matcher, RootValidator, ABC):
 
         if self.matches(path.name) and path.exists():
             errors.extend(self.validate_structure(path))
-        elif self.is_mandatory:
+        elif not self.is_optional:
             errors.append(MandatoryMissedError([path]))
 
         return errors

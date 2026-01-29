@@ -2,17 +2,17 @@ from src.pattern import Pattern, RegexPattern
 from src.validators import AnyValidator, Validator, XorValidator, SidecarValidator, FileValidator, FolderValidator
 
 
-def file(pattern: Pattern, is_mandatory: bool = True) -> FileValidator:
+def file(pattern: Pattern, is_optional: bool = False) -> FileValidator:
     return FileValidator(
         pattern=pattern,
-        is_mandatory=is_mandatory,
+        is_optional=is_optional,
     )
 
 
-def folder(pattern: Pattern, *children: Validator, is_mandatory: bool = True) -> FolderValidator:
+def folder(pattern: Pattern, *children: Validator, is_optional: bool = False) -> FolderValidator:
     return FolderValidator(
         pattern=pattern,
-        is_mandatory=is_mandatory,
+        is_optional=is_optional,
         children=list(children),
     )
 
