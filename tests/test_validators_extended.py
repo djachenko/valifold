@@ -86,16 +86,19 @@ class TestFile:
         assert result
         assert any(isinstance(error, NotFileError) for error in result)
 
-    @pytest.mark.parametrize("is_mandatory,should_have_errors", [
-        (True, True),
-        (False, False),
+    @pytest.mark.parametrize("is_optional,should_have_errors", [
+        (False, True),
+        (True, False),
     ])
-    def test_file_not_exists(self, temp_dir, is_mandatory, should_have_errors):
+    def test_file_not_exists(self, temp_dir, is_optional, should_have_errors):
         """Файл не существует - тест с параметризацией обязательности"""
         name = "test.txt"
         test_file = temp_dir / name
 
-        struct = file(w(name), is_mandatory=is_mandatory)
+        struct = file(
+            w(name),
+            is_optional=is_optional
+        )
         result = struct.validate_as_root(test_file)
 
         if should_have_errors:
@@ -139,16 +142,19 @@ class TestFolder:
         assert result
         assert any(isinstance(error, NotDirectoryError) for error in result)
 
-    @pytest.mark.parametrize("is_mandatory,should_have_errors", [
-        (True, True),
-        (False, False),
+    @pytest.mark.parametrize("is_optional,should_have_errors", [
+        (False, True),
+        (True, False),
     ])
-    def test_folder_not_exists(self, temp_dir, is_mandatory, should_have_errors):
+    def test_folder_not_exists(self, temp_dir, is_optional, should_have_errors):
         """Папка не существует - тест с параметризацией обязательности"""
         name = "test_folder"
         test_folder = temp_dir / name
 
-        struct = folder(w(name), is_mandatory=is_mandatory)
+        struct = folder(
+            w(name),
+            is_optional=is_optional
+        )
         result = struct.validate_as_root(test_folder)
 
         if should_have_errors:
@@ -529,7 +535,11 @@ class TestIntegration:
 
         assert not struct.validate(temp_dir)
 
-    @pytest.mark.parametrize("structure_type", ["simple", "with_metadata", "with_archive"])
+    @pytest.mark.parametrize("structure_type", [
+        "simple",
+        "with_metadata",
+        "with_archive"
+    ])
     def test_data_folder_variants(self, temp_dir, create_files, structure_type):
         """Различные варианты структуры папки данных"""
         data_folder = temp_dir / "data"
@@ -560,7 +570,7 @@ class TestIntegration:
             validators = [
                 file(w("*.csv")),
                 file(w("metadata.json")),
-                file(w("*.zip"), is_mandatory=False)
+                file(w("*.zip"), is_optional=True)
             ]
 
         struct = folder(

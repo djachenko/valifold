@@ -27,8 +27,8 @@ class TestXorOptionalEdgeCase:
         XOR считает success_count = 2, хотя ни одного файла нет.
         """
         struct = xor(
-            file(w("option_a.txt"), is_mandatory=False),
-            file(w("option_b.txt"), is_mandatory=False)
+            file(w("option_a.txt"), is_optional=True),
+            file(w("option_b.txt"), is_optional=True)
         )
 
         errors = struct.validate(temp_dir)
@@ -58,8 +58,14 @@ class TestXorOptionalEdgeCase:
         (temp_dir / "mandatory.txt").touch()
 
         struct = xor(
-            file(w("optional.txt"), is_mandatory=False),
-            file(w("mandatory.txt"), is_mandatory=True)
+            file(
+                w("optional.txt"),
+                is_optional=True)
+            ,
+            file(
+                w("mandatory.txt"),
+                is_optional=False
+            )
         )
 
         errors = struct.validate(temp_dir)
@@ -82,8 +88,8 @@ class TestXorOptionalEdgeCase:
         (temp_dir / "optional.txt").touch()
 
         struct = xor(
-            file(w("optional.txt"), is_mandatory=False),
-            file(w("mandatory.txt"), is_mandatory=True)
+            file(w("optional.txt"), is_optional=True),
+            file(w("mandatory.txt"), is_optional=False)
         )
 
         errors = struct.validate(temp_dir)
@@ -107,8 +113,8 @@ class TestXorOptionalEdgeCase:
         (temp_dir / "option_a.txt").touch()
 
         struct = xor(
-            file(w("option_a.txt"), is_mandatory=False),
-            file(w("option_b.txt"), is_mandatory=False)
+            file(w("option_a.txt"), is_optional=True),
+            file(w("option_b.txt"), is_optional=True)
         )
 
         errors = struct.validate(temp_dir)
@@ -133,8 +139,8 @@ class TestXorOptionalEdgeCase:
         (temp_dir / "option_b.txt").touch()
 
         struct = xor(
-            file(w("option_a.txt"), is_mandatory=False),
-            file(w("option_b.txt"), is_mandatory=False)
+            file(w("option_a.txt"), is_optional=True),
+            file(w("option_b.txt"), is_optional=True)
         )
 
         errors = struct.validate(temp_dir)
@@ -150,9 +156,9 @@ class TestXorOptionalEdgeCase:
         only_one: все опциональные, все отсутствуют.
         """
         struct = only_one(
-            file(w("opt1.txt"), is_mandatory=False),
-            file(w("opt2.txt"), is_mandatory=False),
-            file(w("opt3.txt"), is_mandatory=False)
+            file(w("opt1.txt"), is_optional=True),
+            file(w("opt2.txt"), is_optional=True),
+            file(w("opt3.txt"), is_optional=True)
         )
 
         errors = struct.validate(temp_dir)
@@ -170,9 +176,9 @@ class TestXorOptionalEdgeCase:
         at_least_one: все опциональные, все отсутствуют.
         """
         struct = at_least_one(
-            file(w("opt1.txt"), is_mandatory=False),
-            file(w("opt2.txt"), is_mandatory=False),
-            file(w("opt3.txt"), is_mandatory=False)
+            file(w("opt1.txt"), is_optional=True),
+            file(w("opt2.txt"), is_optional=True),
+            file(w("opt3.txt"), is_optional=True)
         )
 
         errors = struct.validate(temp_dir)
@@ -194,8 +200,8 @@ class TestXorOptionalWithFolders:
         XOR с опциональными папками, обе отсутствуют.
         """
         struct = xor(
-            folder(w("folder_a"), is_mandatory=False),
-            folder(w("folder_b"), is_mandatory=False)
+            folder(w("folder_a"), is_optional=True),
+            folder(w("folder_b"), is_optional=True)
         )
 
         errors = struct.validate(temp_dir)
@@ -213,8 +219,8 @@ class TestXorOptionalWithFolders:
         (temp_dir / "folder_a").mkdir()
 
         struct = xor(
-            folder(w("folder_a"), is_mandatory=False),
-            folder(w("folder_b"), is_mandatory=False)
+            folder(w("folder_a"), is_optional=True),
+            folder(w("folder_b"), is_optional=True)
         )
 
         errors = struct.validate(temp_dir)
@@ -238,8 +244,8 @@ class TestXorOptionalRealWorldScenarios:
         Если ничего нет - это должно быть OK (оба optional).
         """
         struct = xor(
-            file(w("config.json"), is_mandatory=False),
-            folder(w("config"), is_mandatory=False)
+            file(w("config.json"), is_optional=True),
+            folder(w("config"), is_optional=True)
         )
 
         errors = struct.validate(temp_dir)
@@ -254,8 +260,8 @@ class TestXorOptionalRealWorldScenarios:
         README.md или README.txt, оба опциональны.
         """
         struct = xor(
-            file(w("README.md"), is_mandatory=False),
-            file(w("README.txt"), is_mandatory=False)
+            file(w("README.md"), is_optional=True),
+            file(w("README.txt"), is_optional=True)
         )
 
         errors = struct.validate(temp_dir)
@@ -283,8 +289,8 @@ class TestDemonstrationOfProblem:
         # Тест 1: Оба optional, оба отсутствуют
         print("\nТест 1: XOR(optional отсутствует, optional отсутствует)")
         struct1 = xor(
-            file(w("missing_a.txt"), is_mandatory=False),
-            file(w("missing_b.txt"), is_mandatory=False)
+            file(w("missing_a.txt"), is_optional=True),
+            file(w("missing_b.txt"), is_optional=True)
         )
         errors1 = struct1.validate(temp_dir)
         print(f"  Ошибки: {[type(e).__name__ for e in errors1]}")
@@ -294,8 +300,8 @@ class TestDemonstrationOfProblem:
         # Тест 2: Optional отсутствует, mandatory существует
         print("\nТест 2: XOR(optional отсутствует, mandatory существует)")
         struct2 = xor(
-            file(w("missing.txt"), is_mandatory=False),
-            file(w("exists.txt"), is_mandatory=True)
+            file(w("missing.txt"), is_optional=True),
+            file(w("exists.txt"), is_optional=False)
         )
         errors2 = struct2.validate(temp_dir)
         print(f"  Ошибки: {[type(e).__name__ for e in errors2]}")
@@ -305,8 +311,8 @@ class TestDemonstrationOfProblem:
         # Тест 3: Оба optional, один существует
         print("\nТест 3: XOR(optional существует, optional отсутствует)")
         struct3 = xor(
-            file(w("exists.txt"), is_mandatory=False),
-            file(w("missing.txt"), is_mandatory=False)
+            file(w("exists.txt"), is_optional=True),
+            file(w("missing.txt"), is_optional=True)
         )
         errors3 = struct3.validate(temp_dir)
         print(f"  Ошибки: {[type(e).__name__ for e in errors3]}")
@@ -328,14 +334,14 @@ class TestDemonstrationOfProblem:
 
         # ПЛОХО: XOR с optional
         bad_struct = xor(
-            file(w("option_a.txt"), is_mandatory=False),
-            file(w("option_b.txt"), is_mandatory=False)
+            file(w("option_a.txt"), is_optional=True),
+            file(w("option_b.txt"), is_optional=True)
         )
 
         # ХОРОШО: at_least_one с mandatory
         good_struct = only_one(
-            file(w("option_a.txt"), is_mandatory=True),
-            file(w("option_b.txt"), is_mandatory=True)
+            file(w("option_a.txt"), is_optional=False),
+            file(w("option_b.txt"), is_optional=False)
         )
 
         bad_errors = bad_struct.validate(temp_dir)
@@ -367,8 +373,8 @@ def test_xor_optional_parametrized(temp_dir, scenario, files_exist, expected_beh
 
     # Структура с опциональными файлами
     struct = xor(
-        file(w("a.txt"), is_mandatory=False),
-        file(w("b.txt"), is_mandatory=False)
+        file(w("a.txt"), is_optional=True),
+        file(w("b.txt"), is_optional=True)
     )
 
     errors = struct.validate(temp_dir)
