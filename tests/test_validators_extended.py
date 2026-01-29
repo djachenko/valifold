@@ -7,7 +7,7 @@ from src.errors import (
     MandatoryMissedError, NotFileError, NotDirectoryError,
     NoSidecarError, AllValidationsFailedError, ManyOptionsError, ExtraItemsError
 )
-from src.functions import file, folder, sidecar, xor, only_one, at_least_one, anything
+from src.dsl import file, folder, sidecar, xor, only_one, at_least_one, anything
 from src.pattern import w, r
 
 

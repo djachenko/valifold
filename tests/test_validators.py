@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from src.errors import MandatoryMissedError
-from src.functions import file
+from src.dsl import file
 from src.pattern import w
 
 
