@@ -1,5 +1,3 @@
-import re
-
 import pytest
 
 from src.dsl import file, folder
@@ -107,12 +105,12 @@ def test_edge_case_patterns(pattern_class, pattern_str):
 
     # Проверяем некоторые базовые случаи
     if pattern_str == "":
-        assert pattern.matches("") == True
-        assert pattern.matches("a") == False
+        assert pattern.matches("")
+        assert not pattern.matches("a")
     elif pattern_str in (r"^.*$", "*"):
-        assert pattern.matches("") == True
-        assert pattern.matches("test") == True
-        assert pattern.matches("file.txt") == True
+        assert pattern.matches("")
+        assert pattern.matches("test")
+        assert pattern.matches("file.txt")
 
 
 @pytest.mark.parametrize("test_string", [
@@ -136,11 +134,11 @@ def test_special_characters_in_strings(test_string):
     """Тест паттернов на строках со специальными символами"""
     # WildcardPattern с *
     w_pattern = WildcardPattern("*")
-    assert w_pattern.matches(test_string) == True
+    assert w_pattern.matches(test_string)
 
     # RegexPattern с .*
     r_pattern = RegexPattern(r"^.*$")
-    assert r_pattern.matches(test_string) == True
+    assert r_pattern.matches(test_string)
 
 
 # ============ ТЕСТЫ НА ИММУТАБЕЛЬНОСТЬ ============
@@ -164,9 +162,9 @@ def test_pattern_immutability():
         assert True
 
     # Проверяем, что паттерн можно использовать многократно
-    assert regex.matches("test") == True
-    assert regex.matches("test") == True  # Повторный вызов
-    assert regex.matches("other") == False
+    assert regex.matches("test")
+    assert regex.matches("test")  # Повторный вызов
+    assert not regex.matches("other")
 
     # Убеждаемся, что внутреннее состояние не меняется
     pattern_str_before = regex.pattern
@@ -265,7 +263,7 @@ def test_pattern_performance():
     r_time = time.time() - start
 
     # Выводим результаты для информации
-    print(f"\nПроизводительность паттернов:")
+    print("\nПроизводительность паттернов:")
     print(f"WildcardPattern: {w_time:.4f} сек")
     print(f"RegexPattern: {r_time:.4f} сек")
 
@@ -317,7 +315,6 @@ def test_invalid_regex_pattern():
         # Если создался, проверяем, что не падает при использовании
         _ = pattern.matches("test1")
         # Результат может быть любым, главное - не исключение
-
 
 
 def test_pattern_repr():
