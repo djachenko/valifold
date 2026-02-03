@@ -38,6 +38,18 @@ issues = "https://github.com/djachenko/valifold/issues"
 
 
 [project.optional-dependencies]
-tests = [
-    "pytest",
+test = [
+    "pytest >= 9.0",
+]
+
+[tool.setuptools]
+packages = ["src"]
+
+[tool.pytest]
+testpaths = [
+    "tests",
+]
+markers = [
+    "slow: marks tests as slow",
+    "edge_case: marks tests as edge cases tests"
 ]
