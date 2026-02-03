@@ -38,8 +38,8 @@ jobs:
 #          ruff check .
 #          # или flake8 .
 #
-#      - name: Type check with mypy
-#        run: mypy src/
+      - name: Type check with mypy
+        run: mypy src/
 #
 #      - name: Upload coverage
 #        uses: codecov/codecov-action@v3
