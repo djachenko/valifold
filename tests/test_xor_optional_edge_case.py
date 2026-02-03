@@ -294,8 +294,8 @@ class TestDemonstrationOfProblem:
         )
         errors1 = struct1.validate(temp_dir)
         print(f"  Ошибки: {[type(e).__name__ for e in errors1]}")
-        print(f"  Ожидание: нет ошибок (оба optional)")
-        print(f"  Реальность: ManyOptionsError (оба вернули [])")
+        print("  Ожидание: нет ошибок (оба optional)")
+        print("  Реальность: ManyOptionsError (оба вернули [])")
 
         # Тест 2: Optional отсутствует, mandatory существует
         print("\nТест 2: XOR(optional отсутствует, mandatory существует)")
@@ -305,8 +305,8 @@ class TestDemonstrationOfProblem:
         )
         errors2 = struct2.validate(temp_dir)
         print(f"  Ошибки: {[type(e).__name__ for e in errors2]}")
-        print(f"  Ожидание: нет ошибок (только mandatory match)")
-        print(f"  Реальность: ManyOptionsError")
+        print("  Ожидание: нет ошибок (только mandatory match)")
+        print("  Реальность: ManyOptionsError")
 
         # Тест 3: Оба optional, один существует
         print("\nТест 3: XOR(optional существует, optional отсутствует)")
@@ -316,8 +316,8 @@ class TestDemonstrationOfProblem:
         )
         errors3 = struct3.validate(temp_dir)
         print(f"  Ошибки: {[type(e).__name__ for e in errors3]}")
-        print(f"  Ожидание: нет ошибок (только один существует)")
-        print(f"  Реальность: ManyOptionsError")
+        print("  Ожидание: нет ошибок (только один существует)")
+        print("  Реальность: ManyOptionsError")
 
         print("\n" + "=" * 60)
         print("ВЫВОД: XOR не различает 'успех потому что optional'")
