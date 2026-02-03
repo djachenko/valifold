@@ -40,6 +40,7 @@ issues = "https://github.com/djachenko/valifold/issues"
 [project.optional-dependencies]
 test = [
     "pytest >= 9.0",
+    "ruff >= 0.15",
     "mypy >= 1.19",
 ]
 
