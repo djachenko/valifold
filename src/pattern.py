@@ -1,11 +1,13 @@
 import fnmatch
 import re
+from abc import abstractmethod, ABC
 from dataclasses import dataclass
 from functools import cached_property
 from re import Match
 
 
-class Pattern:
+class Pattern(ABC):
+    @abstractmethod
     def matches(self, name: str) -> bool:
         ...
 

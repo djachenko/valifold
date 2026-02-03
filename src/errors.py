@@ -9,8 +9,12 @@ class ValifoldError:
     message: str | None = None
     default_message: ClassVar[str | None] = None
 
+    @property
+    def _message_format(self) -> str:
+        return self.message or self.default_message or ""
+
     def __post_init__(self):
-        if not (self.message or self.default_message):
+        if not self._message_format:
             raise ValueError("Message or default message should be not empty or None")
 
     def formatted_message(self, root_path: Path | None = None) -> str:
@@ -24,8 +28,7 @@ class ValifoldError:
             string_paths[-1],
         ])
 
-        message_format = self.message or self.default_message
-        return message_format.format(paths=formatted_paths)
+        return self._message_format.format(paths=formatted_paths)
 
 
 class MandatoryMissedError(ValifoldError):
