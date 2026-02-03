@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "valifold"
+version = "0.0.1"
+authors = [
+    { name = "Igor Djachenko" },
+]
+description = "A Python library for validating file and folder structures with a fluent DSL"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Testing",
+    "Topic :: System :: Filesystems",
+    "Topic :: Utilities",
+    "Typing :: Typed"
+]
+license = { text = "MIT" }
+
+[project.urls]
+homepage = "https://github.com/djachenko/valifold"
+source = "https://github.com/djachenko/valifold"
+documentation = "https://github.com/djachenko/valifold#readme"
+issues = "https://github.com/djachenko/valifold/issues"
+
+
+[project.optional-dependencies]
+tests = [
+    "pytest",
+]
