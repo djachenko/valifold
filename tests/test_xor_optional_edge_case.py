@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from src.dsl import file, folder, xor, only_one, at_least_one
-from src.errors import ManyOptionsError
-from src.pattern import w
+from valifold.dsl import file, folder, xor, only_one, at_least_one
+from valifold.errors import ManyOptionsError
+from valifold.pattern import w
 
 
 @pytest.fixture
@@ -294,8 +294,8 @@ class TestDemonstrationOfProblem:
         )
         errors1 = struct1.validate(temp_dir)
         print(f"  Ошибки: {[type(e).__name__ for e in errors1]}")
-        print(f"  Ожидание: нет ошибок (оба optional)")
-        print(f"  Реальность: ManyOptionsError (оба вернули [])")
+        print("  Ожидание: нет ошибок (оба optional)")
+        print("  Реальность: ManyOptionsError (оба вернули [])")
 
         # Тест 2: Optional отсутствует, mandatory существует
         print("\nТест 2: XOR(optional отсутствует, mandatory существует)")
@@ -305,8 +305,8 @@ class TestDemonstrationOfProblem:
         )
         errors2 = struct2.validate(temp_dir)
         print(f"  Ошибки: {[type(e).__name__ for e in errors2]}")
-        print(f"  Ожидание: нет ошибок (только mandatory match)")
-        print(f"  Реальность: ManyOptionsError")
+        print("  Ожидание: нет ошибок (только mandatory match)")
+        print("  Реальность: ManyOptionsError")
 
         # Тест 3: Оба optional, один существует
         print("\nТест 3: XOR(optional существует, optional отсутствует)")
@@ -316,8 +316,8 @@ class TestDemonstrationOfProblem:
         )
         errors3 = struct3.validate(temp_dir)
         print(f"  Ошибки: {[type(e).__name__ for e in errors3]}")
-        print(f"  Ожидание: нет ошибок (только один существует)")
-        print(f"  Реальность: ManyOptionsError")
+        print("  Ожидание: нет ошибок (только один существует)")
+        print("  Реальность: ManyOptionsError")
 
         print("\n" + "=" * 60)
         print("ВЫВОД: XOR не различает 'успех потому что optional'")
@@ -386,7 +386,3 @@ def test_xor_optional_parametrized(temp_dir, scenario, files_exist, expected_beh
     # Все сценарии дают ManyOptionsError из-за проблемы
     if expected_behavior == "should_error_many":
         assert any(isinstance(e, ManyOptionsError) for e in errors)
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v", "-s"])  # -s для вывода print

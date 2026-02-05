@@ -9,8 +9,8 @@ This code should validate this project structure:
 ```python
 from pathlib import Path
 
-from dsl import folder, file, anything
-from pattern import w
+from valifold.dsl import folder, file, anything
+from valifold.pattern import w
 
 # Define expected structure
 structure = folder(

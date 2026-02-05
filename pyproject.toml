@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools >= 77.0.3"]
+requires = ["setuptools >= 77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "valifold"
-version = "0.0.1"
+version = "0.1.0"
 authors = [
     { name = "Igor Djachenko" },
 ]
@@ -40,10 +40,13 @@ issues = "https://github.com/djachenko/valifold/issues"
 [project.optional-dependencies]
 test = [
     "pytest >= 9.0",
+    "ruff >= 0.15",
+    "mypy >= 1.19",
+    "pytest-cov >= 7.0",
 ]
 
-[tool.setuptools]
-packages = ["src"]
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.pytest]
 testpaths = [

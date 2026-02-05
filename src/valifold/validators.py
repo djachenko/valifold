@@ -3,9 +3,9 @@ from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
 
-from src.errors import ValifoldError, MandatoryMissedError, NotDirectoryError, ExtraItemsError, ManyOptionsError, \
+from valifold.errors import ValifoldError, MandatoryMissedError, NotDirectoryError, ExtraItemsError, ManyOptionsError, \
     FewOptionsError, AllValidationsFailedError, NotFileError, NoSidecarError
-from src.pattern import Pattern, RegexPattern
+from valifold.pattern import Pattern, RegexPattern
 
 
 class Validator(ABC):
@@ -65,7 +65,7 @@ class SubstructureValidator(Validator, Matcher, RootValidator, ABC):
 
 class FileValidator(SubstructureValidator):
     def validate_structure(self, self_path: Path) -> list[ValifoldError]:
-        errors = []
+        errors: list[ValifoldError] = []
 
         if not self_path.is_file():
             errors.append(NotFileError([self_path]))
@@ -136,7 +136,7 @@ class XorValidator(Validator, Matcher):
             if not error_list:
                 success_count += 1
 
-        errors = []
+        errors: list[ValifoldError] = []
 
         if success_count == 0:
             errors.append(AllValidationsFailedError([parent]))
@@ -192,7 +192,7 @@ class SidecarValidator(Validator):
             if side_match:
                 side_matches.add(side_match.groups())
 
-        errors = []
+        errors: list[ValifoldError] = []
 
         if mismatched_items := [main_map[mismatch] for mismatch in main_matches.difference(side_matches)]:
             errors.append(NoSidecarError(mismatched_items))

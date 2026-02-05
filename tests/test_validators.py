@@ -3,9 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from src.errors import MandatoryMissedError
-from src.dsl import file
-from src.pattern import w
+from valifold.errors import MandatoryMissedError
+from valifold.dsl import file
+from valifold.pattern import w
 
 
 @pytest.fixture
