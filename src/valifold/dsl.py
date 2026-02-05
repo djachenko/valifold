@@ -1,5 +1,5 @@
-from src.pattern import Pattern, RegexPattern
-from src.validators import AnyValidator, Validator, XorValidator, SidecarValidator, FileValidator, FolderValidator
+from valifold.pattern import Pattern, RegexPattern
+from valifold.validators import AnyValidator, Validator, XorValidator, SidecarValidator, FileValidator, FolderValidator
 
 
 def file(pattern: Pattern, is_optional: bool = False) -> FileValidator:

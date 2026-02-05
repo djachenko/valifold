@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools >= 77.0.3"]
+requires = ["setuptools >= 77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "valifold"
-version = "0.0.1"
+version = "0.1.0"
 authors = [
     { name = "Igor Djachenko" },
 ]
@@ -45,8 +45,8 @@ test = [
     "pytest-cov >= 7.0",
 ]
 
-[tool.setuptools]
-packages = ["src"]
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.pytest]
 testpaths = [
@@ -56,6 +56,3 @@ markers = [
     "slow: marks tests as slow",
     "edge_case: marks tests as edge cases tests"
 ]
-
-[tool.coverage.paths]
-source = ["src"]

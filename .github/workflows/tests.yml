@@ -31,7 +31,7 @@ jobs:
 
       - name: Run tests with pytest
         run: |
-          pytest --cov=src --cov-report=lcov
+          pytest --cov=src
 
       - name: Lint with ruff
         run: |
