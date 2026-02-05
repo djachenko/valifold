@@ -56,3 +56,6 @@ markers = [
     "slow: marks tests as slow",
     "edge_case: marks tests as edge cases tests"
 ]
+
+[tool.coverage.paths]
+source = ["src"]
