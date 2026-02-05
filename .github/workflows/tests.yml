@@ -40,8 +40,4 @@ jobs:
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          base-path: ${{ github.workspace }} 
-
-      - name: debug
-        run: |
-          pwd
+          base-path: ${{ env.Python_ROOT_DIR }}/site-packages
