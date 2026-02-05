@@ -36,8 +36,12 @@ jobs:
         run: |
           mypy src/
 
+      - name: Get Python root
+        run: |
+          echo "PACKAGES_ROOT=$(python -c 'import sys; print(sys.prefix)')" >> $GITHUB_ENV
+
       - name: Upload coverage to Coveralls
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          base-path: ${{ env.Python_ROOT_DIR }}/site-packages
+          base-path: ${{ env.PACKAGES_ROOT }}
