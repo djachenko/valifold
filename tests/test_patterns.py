@@ -1,7 +1,7 @@
 import pytest
 
-from src.dsl import file, folder
-from src.pattern import RegexPattern, WildcardPattern, w, r, Pattern
+from valifold.dsl import file, folder
+from valifold.pattern import RegexPattern, WildcardPattern, w, r, Pattern
 
 
 # ============ ТЕСТЫ НА БАЗОВОЕ ПОВЕДЕНИЕ ============
@@ -329,8 +329,3 @@ def test_pattern_repr():
     # Проверяем, что паттерны можно сравнить (как строки)
     assert "*.txt" in str(w_pattern)
     assert "^.*\\\\.txt$" in str(r_pattern)
-
-
-if __name__ == "__main__":
-    # Запуск тестов напрямую
-    pytest.main([__file__, "-v", "--tb=short"])

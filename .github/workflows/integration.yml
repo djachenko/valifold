@@ -1,19 +1,18 @@
 name: Tests
 
 on:
-  push:
   pull_request:
     branches:
       - develop
       - master
 
 jobs:
-  test:
+  integration:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-latest ]
-        python-version: [ "3.x" ]
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        python-version: [ "3.10", "3.11", "3.12", "3.13", "3.14", "3.x" ]
       fail-fast: false
 
     steps:
@@ -31,16 +30,4 @@ jobs:
 
       - name: Run tests with pytest
         run: |
-          pytest --cov=valifold
-
-      - name: Lint with ruff
-        run: |
-          ruff check
-
-      - name: Type check with mypy
-        run: mypy src/
-
-      - name: Upload coverage to Coveralls
-        uses: coverallsapp/github-action@v2
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pytest

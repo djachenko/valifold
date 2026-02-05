@@ -3,12 +3,12 @@ from pathlib import Path
 
 import pytest
 
-from src.errors import (
+from valifold.errors import (
     MandatoryMissedError, NotFileError, NotDirectoryError,
     NoSidecarError, AllValidationsFailedError, ManyOptionsError, ExtraItemsError
 )
-from src.dsl import file, folder, sidecar, xor, only_one, at_least_one, anything
-from src.pattern import w, r
+from valifold.dsl import file, folder, sidecar, xor, only_one, at_least_one, anything
+from valifold.pattern import w, r
 
 
 @pytest.fixture
@@ -703,7 +703,3 @@ class TestWithFixtures:
             file(w("*.py"))
         )
         assert not struct.validate(standard_project_structure)
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v", "--tb=short"])
