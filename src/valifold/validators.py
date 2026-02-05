@@ -3,9 +3,9 @@ from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
 
-from src.errors import ValifoldError, MandatoryMissedError, NotDirectoryError, ExtraItemsError, ManyOptionsError, \
+from valifold.errors import ValifoldError, MandatoryMissedError, NotDirectoryError, ExtraItemsError, ManyOptionsError, \
     FewOptionsError, AllValidationsFailedError, NotFileError, NoSidecarError
-from src.pattern import Pattern, RegexPattern
+from valifold.pattern import Pattern, RegexPattern
 
 
 class Validator(ABC):

@@ -1,7 +1,7 @@
 import pytest
 
-from src.dsl import file, folder
-from src.pattern import RegexPattern, WildcardPattern, w, r, Pattern
+from valifold.dsl import file, folder
+from valifold.pattern import RegexPattern, WildcardPattern, w, r, Pattern
 
 
 # ============ ТЕСТЫ НА БАЗОВОЕ ПОВЕДЕНИЕ ============
