@@ -703,7 +703,3 @@ class TestWithFixtures:
             file(w("*.py"))
         )
         assert not struct.validate(standard_project_structure)
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v", "--tb=short"])

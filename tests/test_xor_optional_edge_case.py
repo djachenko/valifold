@@ -386,7 +386,3 @@ def test_xor_optional_parametrized(temp_dir, scenario, files_exist, expected_beh
     # Все сценарии дают ManyOptionsError из-за проблемы
     if expected_behavior == "should_error_many":
         assert any(isinstance(e, ManyOptionsError) for e in errors)
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v", "-s"])  # -s для вывода print
