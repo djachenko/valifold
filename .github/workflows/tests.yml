@@ -9,20 +9,15 @@ on:
 
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ ubuntu-latest ]
-        python-version: [ "3.x" ]
-      fail-fast: false
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.x"
 
       - name: Install dependencies
         run: |
@@ -38,10 +33,15 @@ jobs:
           ruff check
 
       - name: Type check with mypy
-        run: mypy src/
+        run: |
+          mypy src/
 
       - name: Upload coverage to Coveralls
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          base-path: .
+          base-path: ${{ github.workspace }} 
+
+      - name: debug
+        run: |
+          pwd
