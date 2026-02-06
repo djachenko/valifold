@@ -37,6 +37,7 @@ jobs:
           mypy src/
 
       - name: Upload coverage to Coveralls
-        uses: coverallsapp/github-action@v2
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          coveralls --basedir=src
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
