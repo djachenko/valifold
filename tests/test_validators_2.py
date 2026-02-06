@@ -11,19 +11,19 @@
 
 import tempfile
 from pathlib import Path
+
 import pytest
 
 from valifold.dsl import file, folder, anything, sidecar, xor
-from valifold.pattern import w, r
-from valifold.validators import XorValidator
 from valifold.errors import (
     MandatoryMissedError,
     NotFileError,
     NotDirectoryError,
     ExtraItemsError,
     FewOptionsError,
-    ManyOptionsError,
 )
+from valifold.pattern import w, r
+from valifold.validators import XorValidator
 
 
 @pytest.fixture
@@ -340,8 +340,6 @@ class TestFolderValidatorWithChildren:
             file(w("*.txt")),
             sidecar(r(r'^(.+)\.jpg$'), r(r'^(.+)\.json$'))
         )
-
-        errors = validator.validate_as_root(test_folder)
 
         assert len(validator._structure_children) == 1
 
