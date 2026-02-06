@@ -7,10 +7,11 @@
 - WildcardPattern: matches()
 - DSL функции w() и r()
 """
-from itertools import product
+
+import re
 
 import pytest
-import re
+
 from valifold.pattern import (
     Pattern,
     BasePattern,
@@ -20,8 +21,6 @@ from valifold.pattern import (
     r,
 )
 
-# @pytest.fixture
-# def patterns():
 
 class TestBasePatternValidation:
     """Валидация BasePattern"""
