@@ -204,11 +204,11 @@ class TestWildcardPatternMatches:
         assert pattern.matches(test_str) == expected
 
 
+@pytest.mark.parametrize("pattern_class", [
+    RegexPattern,
+    WildcardPattern,
+])
 class TestCommonForPatterns:
-    @pytest.mark.parametrize("pattern_class", [
-        RegexPattern,
-        WildcardPattern,
-    ])
     def test_subclasses_inheritance(self, pattern_class):
         assert issubclass(pattern_class, Pattern)
         assert issubclass(pattern_class, BasePattern)
@@ -225,28 +225,16 @@ class TestCommonForPatterns:
         {},
         set(),
     ])
-    @pytest.mark.parametrize("pattern_class", [
-        RegexPattern,
-        WildcardPattern,
-    ])
     def test_subclasses_invalid_pattern(self, pattern_class, pattern):
         with pytest.raises(TypeError, match="Pattern must be string"):
             pattern_class(pattern)
 
-    @pytest.mark.parametrize("pattern_class", [
-        RegexPattern,
-        WildcardPattern,
-    ])
     def test_subclasses_empty_pattern(self, pattern_class):
         assert issubclass(pattern_class, BasePattern)
 
         with pytest.raises(ValueError, match="Pattern must not be empty"):
             pattern_class("")
 
-    @pytest.mark.parametrize("pattern_class", [
-        RegexPattern,
-        WildcardPattern,
-    ])
     def test_immutability(self, pattern_class):
         assert is_dataclass(pattern_class)
 
@@ -286,6 +274,14 @@ class TestPatternEquivalence:
                 f"Несоответствие для '{test_string}': " \
                 f"WildcardPattern('{wildcard_pattern}') = {w_result}, " \
                 f"RegexPattern('{regex_pattern}') = {r_result}"
+
+
+@pytest.fixture(params=[
+    w,
+    r,
+])
+def dsl_func(request):
+    return request.param
 
 
 class TestDSLFunctions:
@@ -335,36 +331,28 @@ class TestDSLFunctions:
         [],
         {},
     ])
-    def test_w_with_invalid_input(self, invalid_input):
-        """w() с невалидным вводом выбрасывает TypeError"""
-        with pytest.raises(TypeError, match="Pattern must be string"):
-            w(invalid_input)
-
-    @pytest.mark.parametrize("invalid_input", [
-        None,
-        123,
-        [],
-        {},
-    ])
-    def test_r_with_invalid_input(self, invalid_input):
+    def test_with_invalid_input(self, dsl_func, invalid_input):
         """r() с невалидным вводом выбрасывает TypeError"""
         with pytest.raises(TypeError, match="Pattern must be string"):
-            r(invalid_input)
+            dsl_func(invalid_input)
 
-    def test_w_with_empty_string(self):
+    def test_with_empty_string(self, dsl_func):
         """w() с пустой строкой выбрасывает ValueError"""
         with pytest.raises(ValueError, match="Pattern must not be empty"):
-            w("")
-
-    def test_r_with_empty_string(self):
-        """r() с пустой строкой выбрасывает ValueError"""
-        with pytest.raises(ValueError, match="Pattern must not be empty"):
-            r("")
+            dsl_func("")
 
     def test_r_with_invalid_regex(self):
         """r() с невалидным regex выбрасывает ValueError"""
         with pytest.raises(ValueError, match="Invalid regex pattern"):
             r(r'[invalid')
+
+
+@pytest.fixture(params=[
+    RegexPattern(r'^.*$'),
+    WildcardPattern("*")
+])
+def any_pattern(request):
+    return request.param
 
 
 class TestPatternEdgeCases:
@@ -377,21 +365,10 @@ class TestPatternEdgeCases:
         assert pattern.matches("")
         assert not pattern.matches("a")
 
-    def test_regex_pattern_match_any(self):
-        """RegexPattern совпадающий с любой строкой"""
-        pattern = RegexPattern(r'^.*$')
-
-        assert pattern.matches("")
-        assert pattern.matches("test")
-        assert pattern.matches("any string")
-
-    def test_wildcard_pattern_match_any(self):
-        """WildcardPattern совпадающий с любой строкой"""
-        pattern = WildcardPattern("*")
-
-        assert pattern.matches("")
-        assert pattern.matches("test")
-        assert pattern.matches("any string")
+    def test_pattern_match_any(self, any_pattern):
+        assert any_pattern.matches("")
+        assert any_pattern.matches("test")
+        assert any_pattern.matches("any string")
 
     @pytest.mark.parametrize("pattern_class, pattern_str", [
         (RegexPattern, r"^$"),  # Пустая строка
@@ -433,15 +410,9 @@ class TestPatternEdgeCases:
         "file[1].txt",  # Квадратные скобки
         "file{1}.txt",  # Фигурные скобки
     ])
-    def test_special_characters_in_strings(self, test_string):
+    def test_special_characters_in_strings(self, test_string, any_pattern):
         """Тест паттернов на строках со специальными символами"""
-        # WildcardPattern с *
-        w_pattern = WildcardPattern("*")
-        assert w_pattern.matches(test_string)
-
-        # RegexPattern с .*
-        r_pattern = RegexPattern(r"^.*$")
-        assert r_pattern.matches(test_string)
+        assert any_pattern.matches(test_string)
 
 
 class TestUnicodeSupport:
@@ -474,19 +445,11 @@ class TestUnicodeSupport:
 class TestLongStrings:
     """Тесты с длинными строками"""
 
-    def test_regex_pattern_long_string(self):
+    def test_long_string(self, any_pattern):
         """RegexPattern работает с длинными строками"""
         long_string = "a" * 10000 + ".txt"
-        pattern = RegexPattern(r"^a+\.txt$")
 
-        assert pattern.matches(long_string)
-
-    def test_wildcard_pattern_long_string(self):
-        """WildcardPattern работает с длинными строками"""
-        long_string = "a" * 10000 + ".txt"
-        pattern = WildcardPattern("*.txt")
-
-        assert pattern.matches(long_string)
+        assert any_pattern.matches(long_string)
 
     def test_regex_pattern_many_groups(self):
         """RegexPattern с большим количеством групп"""
