@@ -25,23 +25,18 @@ from valifold.pattern import (
 
 class TestPurePattern:
     def test_pattern_protocol_instantiation(self):
-        with pytest.raises(TypeError, check=lambda e: "Can't instantiate abstract class" in str(e)):
+        """Pattern - абстрактный класс, не может быть инстанцирован"""
+        with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             Pattern()
 
 
 class TestBasePattern:
-    """Валидация BasePattern"""
+    """Проверка абстрактности BasePattern"""
 
-    @pytest.mark.parametrize("pattern", [
-        None,
-        123,
-        "",
-        "test",
-    ])
-    def test_base_pattern_with_non_string_raises(self, pattern):
-        """BasePattern с не-строкой выбрасывает TypeError"""
+    def test_base_pattern_is_abstract(self):
+        """BasePattern - абстрактный класс, не может быть инстанцирован напрямую"""
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
-            BasePattern(pattern=pattern)
+            BasePattern(pattern="test")
 
 
 class TestRegexPattern:
@@ -150,6 +145,22 @@ class TestRegexPattern:
         compiled2 = pattern._compiled
 
         assert compiled1 is compiled2
+
+    def test_compiled_pattern_reused_across_operations(self):
+        """_compiled переиспользуется между match() и group_count"""
+        pattern = RegexPattern(r'^(\w+)\.txt$')
+
+        # Первый вызов match компилирует паттерн
+        match_result = pattern.match("test.txt")
+        assert match_result is not None
+        compiled_after_match = pattern._compiled
+
+        # group_count должен использовать уже скомпилированный паттерн
+        count = pattern.group_count
+        compiled_after_count = pattern._compiled
+
+        assert compiled_after_match is compiled_after_count
+        assert count == 1
 
     @pytest.mark.parametrize("pattern_str, test_str, expected", [
         ("test.*", "test.txt", True),
@@ -318,6 +329,43 @@ class TestDSLFunctions:
 
         assert pattern.pattern == pattern_str
 
+    @pytest.mark.parametrize("invalid_input", [
+        None,
+        123,
+        [],
+        {},
+    ])
+    def test_w_with_invalid_input(self, invalid_input):
+        """w() с невалидным вводом выбрасывает TypeError"""
+        with pytest.raises(TypeError, match="Pattern must be string"):
+            w(invalid_input)
+
+    @pytest.mark.parametrize("invalid_input", [
+        None,
+        123,
+        [],
+        {},
+    ])
+    def test_r_with_invalid_input(self, invalid_input):
+        """r() с невалидным вводом выбрасывает TypeError"""
+        with pytest.raises(TypeError, match="Pattern must be string"):
+            r(invalid_input)
+
+    def test_w_with_empty_string(self):
+        """w() с пустой строкой выбрасывает ValueError"""
+        with pytest.raises(ValueError, match="Pattern must not be empty"):
+            w("")
+
+    def test_r_with_empty_string(self):
+        """r() с пустой строкой выбрасывает ValueError"""
+        with pytest.raises(ValueError, match="Pattern must not be empty"):
+            r("")
+
+    def test_r_with_invalid_regex(self):
+        """r() с невалидным regex выбрасывает ValueError"""
+        with pytest.raises(ValueError, match="Invalid regex pattern"):
+            r(r'[invalid')
+
 
 class TestPatternEdgeCases:
     """Граничные случаи"""
@@ -328,7 +376,6 @@ class TestPatternEdgeCases:
 
         assert pattern.matches("")
         assert not pattern.matches("a")
-
 
     def test_regex_pattern_match_any(self):
         """RegexPattern совпадающий с любой строкой"""
@@ -350,7 +397,6 @@ class TestPatternEdgeCases:
         (RegexPattern, r"^$"),  # Пустая строка
         (RegexPattern, r"^.*$"),  # Любая строка
         (RegexPattern, r"^a{0}$"),  # Ноль повторений
-        # (WildcardPattern, ""), # Пустой паттерн
         (WildcardPattern, "*"),  # Любая строка
         (WildcardPattern, "?"),  # Ровно один символ
     ])
@@ -362,7 +408,7 @@ class TestPatternEdgeCases:
         assert pattern is not None
 
         # Проверяем некоторые базовые случаи
-        if pattern_str == "":
+        if pattern_str == r"^$":
             assert pattern.matches("")
             assert not pattern.matches("a")
         elif pattern_str in (r"^.*$", "*"):
@@ -398,4 +444,59 @@ class TestPatternEdgeCases:
         assert r_pattern.matches(test_string)
 
 
-# performance
+class TestUnicodeSupport:
+    """Тесты работы с Unicode строками"""
+
+    @pytest.mark.parametrize("pattern_str, test_str, expected", [
+        (r"^.*\.txt$", "файл.txt", True),
+        (r"^тест.*$", "тест.jpg", True),
+        (r"^.*\.日本語$", "document.日本語", True),
+        (r"^[а-я]+\.txt$", "файл.txt", True),
+        (r"^[а-я]+\.txt$", "file.txt", False),
+    ])
+    def test_regex_unicode_patterns(self, pattern_str, test_str, expected):
+        """RegexPattern работает с Unicode"""
+        pattern = RegexPattern(pattern_str)
+        assert pattern.matches(test_str) == expected
+
+    @pytest.mark.parametrize("pattern_str, test_str, expected", [
+        ("*.txt", "файл.txt", True),
+        ("тест.*", "тест.jpg", True),
+        ("файл_???.txt", "файл_001.txt", True),
+        ("*", "日本語ファイル.txt", True),
+    ])
+    def test_wildcard_unicode_patterns(self, pattern_str, test_str, expected):
+        """WildcardPattern работает с Unicode"""
+        pattern = WildcardPattern(pattern_str)
+        assert pattern.matches(test_str) == expected
+
+
+class TestLongStrings:
+    """Тесты с длинными строками"""
+
+    def test_regex_pattern_long_string(self):
+        """RegexPattern работает с длинными строками"""
+        long_string = "a" * 10000 + ".txt"
+        pattern = RegexPattern(r"^a+\.txt$")
+
+        assert pattern.matches(long_string)
+
+    def test_wildcard_pattern_long_string(self):
+        """WildcardPattern работает с длинными строками"""
+        long_string = "a" * 10000 + ".txt"
+        pattern = WildcardPattern("*.txt")
+
+        assert pattern.matches(long_string)
+
+    def test_regex_pattern_many_groups(self):
+        """RegexPattern с большим количеством групп"""
+        # Создаем паттерн с 50 группами
+        pattern_str = r"^" + r"".join([r"(\w)" for _ in range(50)]) + r"$"
+        pattern = RegexPattern(pattern_str)
+
+        assert pattern.group_count == 50
+
+        test_string = "a" * 50
+        result = pattern.match(test_string)
+        assert result is not None
+        assert len(result.groups()) == 50
