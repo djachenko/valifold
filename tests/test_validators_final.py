@@ -614,30 +614,52 @@ class TestXorValidator:
 
 class TestOnlyOne:
 
-    @pytest.mark.parametrize("files_to_create, expected_error", [
-        ([], AllValidationsFailedError),
-        (["option_a.txt"], None),
-        (["option_b.txt"], None),
-        (["option_a.txt", "option_b.txt"], ManyOptionsError),
-        (["option_a.txt", "option_c.txt"], ManyOptionsError),
-        (["option_a.txt", "option_b.txt", "option_c.txt"], ManyOptionsError),
+    @pytest.mark.parametrize("checks_count, file_stem", [
+        (count, string.ascii_lowercase[stem_index])
+        for count in range(1, 10)
+        for stem_index in range(count)
     ])
-    def test_only_one_scenarios(self, temp_dir, create_files, files_to_create, expected_error):
-        create_files(temp_dir, {name: None for name in files_to_create})
+    def test_only_one_success(self, temp_dir, create_files, checks_count, file_stem):
+        extension = ".txt"
 
-        struct = only_one(
-            file(w("option_a.txt")),
-            file(w("option_b.txt")),
-            file(w("option_c.txt"))
-        )
+        create_files(temp_dir, {file_stem + extension: None})
 
+        struct = only_one(*[file(w(c + extension)) for c in string.ascii_lowercase[:checks_count]])
         result = struct.validate(temp_dir)
 
-        if expected_error:
-            assert result
-            assert any(isinstance(e, expected_error) for e in result)
-        else:
-            assert not result
+        assert not result
+
+    @pytest.mark.parametrize("checks_count", list(range(1, 10)))
+    def test_only_one_none_exists(self, temp_dir, create_files, validate_errors, checks_count):
+        extension = ".txt"
+
+        struct = only_one(*[file(w(c + extension)) for c in string.ascii_lowercase[:checks_count]])
+        result = struct.validate(temp_dir)
+
+        assert result
+
+        validate_errors(
+            result,
+            (AllValidationsFailedError, [temp_dir.name]),
+            *[(MandatoryMissedError, [temp_dir.name]) for _ in range(checks_count)],
+        )
+
+    @pytest.mark.parametrize("files_count, checks_count", [
+        (files_count, checks_count)
+        for checks_count in range(2, 10)
+        for files_count in range(2, checks_count + 1)
+    ])
+    def test_only_one_too_many(self, temp_dir, create_files, validate_errors, files_count, checks_count):
+        # Создаем слишком много файлов проходящих проверки (больше двух)
+        extension = ".txt"
+
+        create_files(temp_dir, {c + extension: None for c in string.ascii_lowercase[:files_count]})
+
+        struct = only_one(*[file(w(c + extension)) for c in string.ascii_lowercase[:checks_count]])
+        result = struct.validate(temp_dir)
+
+        assert result
+        validate_errors(result, (ManyOptionsError, [temp_dir.name]))
 
 
 class TestAtLeastOne:
