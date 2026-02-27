@@ -586,24 +586,30 @@ class TestXorValidator:
         else:
             assert result
 
-    def test_xor_few_options_error(self, temp_dir):
-        """XOR требует минимум 2 успеха, получает только 1 — FewOptionsError."""
-        (temp_dir / "option_a.txt").touch()
+    @pytest.mark.parametrize("files_count, checks_count", [
+        (files_count, checks_count)
+        for files_count in range(10)
+        for checks_count in range(files_count + 1, 10)
+    ])
+    def test_xor_few_options_error(self, temp_dir, create_files, validate_errors, files_count, checks_count):
+        extension = ".txt"
+
+        create_files(temp_dir, {c + extension: None for c in string.ascii_lowercase[:files_count]})
+        children = [file(w(c + extension)) for c in string.ascii_lowercase[:checks_count]]
 
         validator = XorValidator(
-            children=[
-                file(w("option_a.txt")),
-                file(w("option_b.txt")),
-                file(w("option_c.txt")),
-            ],
-            min_checks=2,
-            max_checks=3
+            children=children,
+            min_checks=checks_count,
+            max_checks=checks_count,
         )
 
-        errors = validator.validate(temp_dir)
+        result = validator.validate(temp_dir)
 
-        assert errors
-        assert any(isinstance(e, FewOptionsError) for e in errors)
+        assert result
+        validate_errors(
+            result,
+            (FewOptionsError, [temp_dir.name]),
+        )
 
 
 class TestOnlyOne:
