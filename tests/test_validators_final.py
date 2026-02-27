@@ -923,21 +923,18 @@ class TestPerformance:
     @pytest.mark.parametrize("pair_count", [pow(2, e) for e in range(1, LIMIT)])
     def test_many_sidecar_pairs(self, temp_dir, create_files, pair_count):
         create_files(temp_dir, {
-                **{f"image_{i:04d}.jpg": None for i in range(pair_count)},
-                **{f"image_{i:04d}.json": None for i in range(pair_count)},
+            **{f"image_{i:04d}.jpg": None for i in range(pair_count)},
+            **{f"image_{i:04d}.json": None for i in range(pair_count)},
         })
 
         struct = sidecar(
-                main_pattern=r(r'^(.+)\.jpg$'),
-                sidecar_pattern=r(r'^(.+)\.json$'),
+            main_pattern=r(r'^(.+)\.jpg$'),
+            sidecar_pattern=r(r'^(.+)\.json$'),
         )
 
         result = struct.validate(temp_dir)
 
         assert not result
-
-
-# ============ ГРАНИЧНЫЕ СЛУЧАИ ============
 
 
 @pytest.mark.edge_case
@@ -946,14 +943,17 @@ class TestEdgeCases:
     @pytest.mark.parametrize("filename", [
         "file with spaces.txt",
         "file[brackets].txt",
-        "file(parens).txt",
+        "file(parenthesis).txt",
         "file{braces}.txt",
         ".hidden",
         "..double_dot",
         "file@special#chars.txt",
     ])
-    def test_special_filenames(self, temp_dir, filename):
-        test_file = temp_dir / filename
-        test_file.touch()
+    def test_special_filenames(self, temp_dir, create_files, filename):
+        create_files(temp_dir, {filename: None})
 
-        assert not file(w("*")).validate_as_root(test_file)
+        struct = file(w("*"))
+
+        result = struct.validate(temp_dir)
+
+        assert not result
