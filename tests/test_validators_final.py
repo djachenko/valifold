@@ -1,8 +1,6 @@
 import string
 import tempfile
 from collections import defaultdict
-from enum import Enum, auto
-from itertools import product, repeat
 from pathlib import Path
 from typing import Iterable
 
@@ -25,9 +23,6 @@ from valifold.validators import XorValidator
 
 MANY = 50
 VERY_MANY = 100
-
-
-# ============ ФИКСТУРЫ ============
 
 
 @pytest.fixture
@@ -104,29 +99,6 @@ def validate_errors():
         assert not missed_errors, f"Some expected errors were not found: {", ".join(missed_errors)}"
 
     return inner
-
-
-# @pytest.fixture
-# def standard_project_structure(temp_dir, create_files):
-#     """Стандартная структура Python-проекта для переиспользования в нескольких тестах."""
-#     create_files(temp_dir, {
-#         'README.md': None,
-#         'requirements.txt': None,
-#         'src': {
-#             'main.py': None,
-#             '__init__.py': None,
-#         },
-#         'tests': {
-#             'test_main.py': None,
-#         },
-#         'docs': {
-#             'index.md': None,
-#         },
-#     })
-#     return temp_dir
-
-
-# ============ ТЕСТЫ НА ФАЙЛ ============
 
 
 class TestFile:
@@ -212,9 +184,6 @@ class TestFile:
         result = struct.validate_as_root(test_file)
 
         assert not result
-
-
-# ============ ТЕСТЫ НА ПАПКУ ============
 
 
 class TestFolder:
@@ -313,9 +282,6 @@ class TestFolder:
         assert len(validator._structure_children) == 1
 
 
-# ============ ТЕСТЫ НА SIDECAR ============
-
-
 class TestSidecar:
 
     @pytest.mark.parametrize("main_extension, sidecar_extension, stems", [
@@ -403,8 +369,6 @@ class TestSidecar:
 
             assert result
 
-
-# ============ ТЕСТЫ НА XOR ============
 
 def min_max_checks_file_generator(size: int):
     for check_count in range(1, size):
@@ -543,15 +507,6 @@ class TestXorValidator:
         else:
             assert not result
 
-    # @pytest.mark.parametrize("min_checks, max_checks, files, should_error", [
-    #     (1, 1, ["a.txt"], False),
-    #     (1, 1, ["a.txt", "b.txt"], True),
-    #     (2, 3, ["a.txt"], True),
-    #     (2, 3, ["a.txt", "b.txt"], False),
-    #     (2, 3, ["a.txt", "b.txt", "c.txt"], False),
-    #     (2, 3, ["a.txt", "b.txt", "c.txt", "d.txt"], True),
-    #     (1, None, ["a.txt", "b.txt", "c.txt"], False),
-    # ])
     @pytest.mark.parametrize(
         "min_checks, max_checks, file_count, check_count, success",
         min_max_checks_file_generator(5)
