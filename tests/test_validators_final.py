@@ -693,29 +693,42 @@ class TestAtLeastOne:
         )
 
 
-# ============ ТЕСТЫ НА ANYTHING ============
-
-
 class TestAnything:
-
+    @pytest.mark.parametrize("stem", [
+        *[c for c in "abcde"],
+        ".hidden",
+        "123.456.789",
+        "stem with spaces",
+        "!@#$%^&*()",
+        "",
+    ])
+    @pytest.mark.parametrize("extension", [
+        ".txt",
+        ".jpg",
+        ".csv",
+        "",
+    ])
     @pytest.mark.parametrize("structure", [
         {},
-        {"file1.txt": None},
-        {"file1.txt": None, "file2.jpg": None, "data.csv": None},
-        {"subfolder1": {}},
-        {"sub1": {}, "sub2": {}, "sub3": {}},
-        {"file.txt": None, "subfolder": {}},
-        {".hidden": None, "123.456.789": None, "file with spaces.txt": None},
+        None,
     ])
-    def test_anything_in_folder(self, temp_dir, create_files, structure):
-        test_folder = temp_dir / "test"
-        test_folder.mkdir()
+    def test_anything_in_folder(self, temp_dir, create_files, stem, extension, structure):
+        folder_name = "test"
 
-        create_files(test_folder, structure)
+        create_files(temp_dir, {
+            folder_name: {
+                stem + extension: structure,
+            }
+        })
 
-        struct = folder(w("test"), anything())
+        struct = folder(
+            w(folder_name),
+            anything()
+        )
 
-        assert not struct.validate_as_root(test_folder)
+        result = struct.validate(temp_dir)
+
+        assert not result
 
     def test_anything_matches_any_name(self):
         validator = anything()
@@ -725,53 +738,53 @@ class TestAnything:
         assert validator.matches("")
         assert validator.matches("!@#$%^&*()")
 
-    def test_anything_validate_always_passes(self, temp_dir):
+    def test_anything_validate_nothing(self, temp_dir, create_files):
         validator = anything()
 
-        assert not validator.validate(temp_dir)
+        result = validator.validate(temp_dir)
 
-        (temp_dir / "file1.txt").touch()
-        (temp_dir / "file2.jpg").touch()
-
-        assert not validator.validate(temp_dir)
-
-
-# ============ КОМПЛЕКСНЫЕ ТЕСТЫ ============
+        assert not result
 
 
 class TestComplexScenarios:
 
     @pytest.mark.parametrize("depth", [1, 2, 3, 5])
-    def test_nested_folders_depth(self, temp_dir, depth):
-        current = temp_dir
+    def test_nested_folders_depth(self, temp_dir, create_files, depth):
+        structure = {}
+        current = structure
 
-        for i in range(depth):
-            current = current / f"level{i}"
-            current.mkdir()
+        for i in range(depth - 1):
+            nested = {}
+            current[f"level{i}"] = nested
+            current = nested
 
-        (current / "deep_file.txt").touch()
+        current[f"level{depth - 1}"] = {"deep_file.txt": None}
+
+        create_files(temp_dir, structure)
 
         validator = file(w("deep_file.txt"))
 
         for i in reversed(range(depth)):
             validator = folder(w(f"level{i}"), validator)
 
-        assert not validator.validate_as_root(temp_dir / "level0")
+        result = validator.validate_as_root(temp_dir / "level0")
 
-    @pytest.mark.parametrize("file_extensions, filenames", [
-        (["*.txt", "*.json"], ["file1.txt", "config.json"]),
-        (["*.txt", "*.json", "*.csv"], ["file1.txt", "config.json", "data.csv"]),
-    ])
-    def test_multiple_patterns_same_folder(self, temp_dir, create_files, file_extensions, filenames):
-        test_folder = temp_dir / "test"
-        test_folder.mkdir()
+        assert not result
 
-        create_files(test_folder, {name: None for name in filenames})
+    @pytest.mark.parametrize("extensions_count", [2, 3, 4])
+    def test_multiple_patterns_same_folder(self, temp_dir, create_files, extensions_count):
+        folder_name = "test"
+        extensions = [f".{c}" for c in string.ascii_lowercase[:extensions_count]]
+        filenames = {f"file{ext}": None for ext in extensions}
 
-        validators = [file(w(ext)) for ext in file_extensions]
-        struct = folder(w("test"), *validators)
+        create_files(temp_dir, {folder_name: filenames})
 
-        assert not struct.validate_as_root(test_folder)
+        validators = [file(w(f"*{ext}")) for ext in extensions]
+        struct = folder(w(folder_name), *validators)
+
+        result = struct.validate_as_root(temp_dir / folder_name)
+
+        assert not result
 
 
 # ============ ИНТЕГРАЦИОННЫЕ ТЕСТЫ ============
