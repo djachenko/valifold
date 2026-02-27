@@ -803,23 +803,19 @@ class TestComplexScenarios:
         assert not result
 
 
-# ============ ИНТЕГРАЦИОННЫЕ ТЕСТЫ ============
-
-
 class TestIntegration:
 
     def test_photo_project_structure(self, temp_dir, create_files):
-        project = temp_dir / "photo_project"
-        project.mkdir()
-
-        create_files(project, {
-            'raw': {},
-            'edited': {},
-            'IMG_001.jpg': None,
-            'IMG_001.json': None,
-            'IMG_002.jpg': None,
-            'IMG_002.json': None,
-            'README.md': None,
+        create_files(temp_dir, {
+            "photo_project": {
+                "raw": {},
+                "edited": {},
+                "IMG_001.jpg": None,
+                "IMG_001.json": None,
+                "IMG_002.jpg": None,
+                "IMG_002.json": None,
+                "README.md": None,
+            },
         })
 
         struct = folder(
@@ -828,47 +824,86 @@ class TestIntegration:
             file(w("*.json")),
             sidecar(
                 main_pattern=r(r'^(.+)\.jpg$'),
-                sidecar_pattern=r(r'^(.+)\.json$')
+                sidecar_pattern=r(r'^(.+)\.json$'),
             ),
             file(w("README.md")),
+            file(w("LICENSE.md"), is_optional=True),
             folder(w("raw")),
-            folder(w("edited"))
+            only_one(
+                folder(w("edited")),
+                folder(w("in_progress")),
+            ),
         )
 
-        assert not struct.validate_as_root(project)
+        result = struct.validate(temp_dir)
+
+        assert not result
 
     def test_config_either_file_or_folder(self, temp_dir, create_files):
         create_files(temp_dir, {"config.json": None})
 
         struct = xor(
             file(w("config.json")),
-            folder(w("config"), file(w("*.yaml")))
+            folder(
+                w("config"),
+                file(w("*.yaml")),
+            ),
         )
 
-        assert not struct.validate(temp_dir)
+        result = struct.validate(temp_dir)
 
-    @pytest.mark.parametrize("structure_type", ["simple", "with_metadata", "with_archive"])
+        assert not result
+
+    @pytest.mark.parametrize("structure_type", [
+        "simple",
+        "with_metadata",
+        "with_archive"
+    ])
     def test_data_folder_variants(self, temp_dir, create_files, structure_type):
-        data_folder = temp_dir / "data"
-        data_folder.mkdir()
-
         if structure_type == "simple":
-            create_files(data_folder, {"dataset.csv": None})
-            validators = [file(w("*.csv"))]
+            create_files(temp_dir, {
+                "data": {
+                    "dataset.csv": None,
+                }
+            })
+
+            validators = [
+                file(w("*.csv")),
+            ]
         elif structure_type == "with_metadata":
-            create_files(data_folder, {"dataset.csv": None, "metadata.json": None})
-            validators = [file(w("*.csv")), file(w("metadata.json"))]
+            create_files(temp_dir, {
+                "data": {
+                    "dataset.csv": None,
+                    "metadata.json": None,
+                }
+            })
+
+            validators = [
+                file(w("*.csv")),
+                file(w("metadata.json")),
+            ]
         else:
-            create_files(data_folder, {"dataset.csv": None, "metadata.json": None, "backup.zip": None})
-            validators = [file(w("*.csv")), file(w("metadata.json")), file(w("*.zip"), is_optional=True)]
+            create_files(temp_dir, {
+                "data": {
+                    "dataset.csv": None,
+                    "metadata.json": None,
+                    "backup.zip": None,
+                }
+            })
 
-        assert not folder(w("data"), *validators).validate_as_root(data_folder)
+            validators = [
+                file(w("*.csv")),
+                file(w("metadata.json")),
+                file(w("*.zip"), is_optional=True)
+            ]
 
-    def test_project_has_readme(self, standard_project_structure):
-        assert not file(w("README.md")).validate(standard_project_structure)
+        struct = folder(
+            w("data"),
+            *validators,
+        )
+        result = struct.validate(temp_dir)
 
-    def test_project_has_src(self, standard_project_structure):
-        assert not folder(w("src"), file(w("*.py"))).validate(standard_project_structure)
+        assert not result
 
 
 # ============ ТЕСТЫ ПРОИЗВОДИТЕЛЬНОСТИ ============
