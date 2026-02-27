@@ -185,6 +185,18 @@ class TestFile:
 
         assert not result
 
+    @pytest.mark.parametrize("file_count", range(2, 10))
+    def test_file_validate_multiple_matches(self, temp_dir, create_files, file_count):
+        """validate с wildcard-паттерном когда совпадений несколько — все проходят."""
+        extension = ".txt"
+
+        create_files(temp_dir, {c + extension: None for c in string.ascii_lowercase[:file_count]})
+
+        struct = file(w("*" + extension))
+        result = struct.validate(temp_dir)
+
+        assert not result
+
 
 class TestFolder:
     @pytest.mark.parametrize("pattern, folder_name", [
@@ -280,6 +292,16 @@ class TestFolder:
         )
 
         assert len(validator._structure_children) == 1
+
+    @pytest.mark.parametrize("file_count", range(2, 10))
+    def test_folder_validate_multiple_matches(self, temp_dir, create_files, file_count):
+        """validate с wildcard-паттерном когда совпадений несколько — все проходят."""
+        create_files(temp_dir, {c: {} for c in string.ascii_lowercase[:file_count]})
+
+        struct = folder(w("*"))
+        result = struct.validate(temp_dir)
+
+        assert not result
 
 
 class TestSidecar:
@@ -420,7 +442,17 @@ class TestXorValidator:
         assert validator.min_checks == min_checks
         assert validator.max_checks == max_checks
 
-    """Метод matches() и свойство _matching_children."""
+    @pytest.mark.parametrize("checks_count", range(1, 6))
+    def test_xor_with_optional_children_raises_on_construction(self, checks_count):
+        """XorValidator должен кидать ValueError если среди детей есть опциональный."""
+        extension = ".txt"
+
+        with pytest.raises(ValueError, match="[Oo]ptional"):
+            XorValidator(
+                children=[file(w(c + extension), is_optional=True) for c in string.ascii_lowercase[:checks_count]],
+                min_checks=1,
+                max_checks=1,
+            )
 
     @pytest.mark.parametrize("test_name, expected", [
         ("test.txt", True),
@@ -894,7 +926,6 @@ class TestPerformance:
 
 @pytest.mark.edge_case
 class TestEdgeCases:
-
     @pytest.mark.parametrize("filename", [
         "file with spaces.txt",
         "file[brackets].txt",
