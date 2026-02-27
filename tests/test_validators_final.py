@@ -906,42 +906,35 @@ class TestIntegration:
         assert not result
 
 
-# ============ ТЕСТЫ ПРОИЗВОДИТЕЛЬНОСТИ ============
-
-
+# todo: pytest-benchmark
 @pytest.mark.slow
 class TestPerformance:
+    LIMIT = 17
 
-    @pytest.mark.parametrize("file_count", [10, MANY, VERY_MANY])
+    @pytest.mark.parametrize("file_count", [pow(2, e) for e in range(1, LIMIT)])
     def test_many_files_validation(self, temp_dir, create_files, file_count):
-        test_folder = temp_dir / "test"
-        test_folder.mkdir()
+        create_files(temp_dir, {f"file_{i:04d}.txt": None for i in range(file_count)})
 
-        create_files(test_folder, {f"file_{i:04d}.txt": None for i in range(file_count)})
+        struct = file(w("*.txt"))
+        result = struct.validate(temp_dir)
 
-        assert not folder(w("test"), file(w("*.txt"))).validate_as_root(test_folder)
+        assert not result
 
-    @pytest.mark.parametrize("pair_count", [5, 20, MANY])
+    @pytest.mark.parametrize("pair_count", [pow(2, e) for e in range(1, LIMIT)])
     def test_many_sidecar_pairs(self, temp_dir, create_files, pair_count):
-        test_folder = temp_dir / "test"
-        test_folder.mkdir()
+        create_files(temp_dir, {
+                **{f"image_{i:04d}.jpg": None for i in range(pair_count)},
+                **{f"image_{i:04d}.json": None for i in range(pair_count)},
+        })
 
-        files = {}
-        for i in range(pair_count):
-            files[f"image_{i:04d}.jpg"] = None
-            files[f"image_{i:04d}.json"] = None
-
-        create_files(test_folder, files)
-
-        struct = folder(
-            w("test"),
-            sidecar(
+        struct = sidecar(
                 main_pattern=r(r'^(.+)\.jpg$'),
-                sidecar_pattern=r(r'^(.+)\.json$')
-            )
+                sidecar_pattern=r(r'^(.+)\.json$'),
         )
 
-        assert not struct.validate_as_root(test_folder)
+        result = struct.validate(temp_dir)
+
+        assert not result
 
 
 # ============ ГРАНИЧНЫЕ СЛУЧАИ ============
