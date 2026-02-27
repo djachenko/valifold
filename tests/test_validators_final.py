@@ -613,7 +613,6 @@ class TestXorValidator:
 
 
 class TestOnlyOne:
-
     @pytest.mark.parametrize("checks_count, file_stem", [
         (count, string.ascii_lowercase[stem_index])
         for count in range(1, 10)
@@ -663,31 +662,35 @@ class TestOnlyOne:
 
 
 class TestAtLeastOne:
-
-    @pytest.mark.parametrize("files_to_create, should_pass", [
-        ([], False),
-        (["option_a.txt"], True),
-        (["option_b.txt"], True),
-        (["option_a.txt", "option_b.txt"], True),
-        (["option_a.txt", "option_c.txt"], True),
-        (["option_a.txt", "option_b.txt", "option_c.txt"], True),
+    @pytest.mark.parametrize("stems, checks_count", [
+        (string.ascii_lowercase[start:end], checks_count)
+        for checks_count in range(1, 10)
+        for start in range(0, checks_count)
+        for end in range(start + 1, checks_count + 1)
     ])
-    def test_at_least_one_scenarios(self, temp_dir, create_files, files_to_create, should_pass):
-        create_files(temp_dir, {name: None for name in files_to_create})
+    def test_at_least_one_success(self, temp_dir, create_files, stems, checks_count):
+        extension = ".txt"
 
-        struct = at_least_one(
-            file(w("option_a.txt")),
-            file(w("option_b.txt")),
-            file(w("option_c.txt"))
-        )
+        create_files(temp_dir, {stem + extension: None for stem in stems})
 
+        struct = at_least_one(*[file(w(c + extension)) for c in string.ascii_lowercase[:checks_count]])
         result = struct.validate(temp_dir)
 
-        if should_pass:
-            assert not result
-        else:
-            assert result
-            assert any(isinstance(e, AllValidationsFailedError) for e in result)
+        assert not result
+
+    @pytest.mark.parametrize("checks_count", list(range(1, 10)))
+    def test_at_least_one_none_exists(self, temp_dir, create_files, validate_errors, checks_count):
+        extension = ".txt"
+
+        struct = at_least_one(*[file(w(c + extension)) for c in string.ascii_lowercase[:checks_count]])
+        result = struct.validate(temp_dir)
+
+        assert result
+        validate_errors(
+            result,
+            (AllValidationsFailedError, [temp_dir.name]),
+            *[(MandatoryMissedError, [temp_dir.name]) for _ in range(checks_count)],
+        )
 
 
 # ============ ТЕСТЫ НА ANYTHING ============
