@@ -47,6 +47,7 @@ def create_files():
 
             if isinstance(value, dict):
                 new_path.mkdir(parents=True, exist_ok=True)
+
                 _create(new_path, value)
 
     return _create
@@ -747,42 +748,57 @@ class TestAnything:
 
 
 class TestComplexScenarios:
-
-    @pytest.mark.parametrize("depth", [1, 2, 3, 5])
+    @pytest.mark.parametrize("depth", list(range(1, 10)))
     def test_nested_folders_depth(self, temp_dir, create_files, depth):
         structure = {}
         current = structure
 
-        for i in range(depth - 1):
+        for i in range(depth):
             nested = {}
-            current[f"level{i}"] = nested
-            current = nested
 
-        current[f"level{depth - 1}"] = {"deep_file.txt": None}
+            current |= {
+                f"file_{i}.txt": None,
+                f"folder_{i}": nested,
+            }
+
+            current = nested
 
         create_files(temp_dir, structure)
 
-        validator = file(w("deep_file.txt"))
+        children = []
 
         for i in reversed(range(depth)):
-            validator = folder(w(f"level{i}"), validator)
+            children = [
+                folder(
+                    w(f"folder_{i}"),
+                    *children,
+                ),
+                file(w(f"file_{i}.txt"))
+            ]
 
-        result = validator.validate_as_root(temp_dir / "level0")
+        validator = folder(
+            w("*"),
+            *children,
+        )
+
+        result = validator.validate_as_root(temp_dir)
 
         assert not result
 
-    @pytest.mark.parametrize("extensions_count", [2, 3, 4])
+    @pytest.mark.parametrize("extensions_count", range(1, 10))
     def test_multiple_patterns_same_folder(self, temp_dir, create_files, extensions_count):
-        folder_name = "test"
         extensions = [f".{c}" for c in string.ascii_lowercase[:extensions_count]]
         filenames = {f"file{ext}": None for ext in extensions}
 
-        create_files(temp_dir, {folder_name: filenames})
+        create_files(temp_dir, filenames)
 
-        validators = [file(w(f"*{ext}")) for ext in extensions]
-        struct = folder(w(folder_name), *validators)
+        children = [file(w(f"*{ext}")) for ext in extensions]
+        struct = folder(
+            w("*"),
+            *children
+        )
 
-        result = struct.validate_as_root(temp_dir / folder_name)
+        result = struct.validate_as_root(temp_dir)
 
         assert not result
 
