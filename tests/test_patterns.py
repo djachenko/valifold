@@ -213,7 +213,7 @@ class TestCommonForPatterns:
         assert issubclass(pattern_class, Pattern)
         assert issubclass(pattern_class, BasePattern)
 
-        pattern = pattern_class(f"test")
+        pattern = pattern_class("test")
 
         assert hasattr(pattern, "matches")
         assert callable(pattern.matches)
