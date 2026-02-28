@@ -39,6 +39,6 @@ jobs:
       - name: Upload coverage to Coveralls
         run: |
           pip install coveralls -q
-          coveralls --basedir=src
+          coveralls
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
