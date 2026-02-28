@@ -185,7 +185,7 @@ class SidecarValidator(Validator):
             raise ValueError("Sidecar pattern should have at least one capture group")
 
         if not self.main_pattern.group_count == self.sidecar_pattern.group_count:
-            raise ValueError("Main and sidecar pattern should have equal count of capture groups")
+            raise ValueError("Main and sidecar patterns should have equal count of capture groups")
 
     def validate(self, path: Path) -> list[ValifoldError]:
         main_matches = set()

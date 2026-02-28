@@ -304,8 +304,20 @@ class TestFolder:
         assert not result
 
 
-class TestSidecar:
+def _test_sidecar_error_message(main_groups: int, sidecar_groups: int):
+    if main_groups == 0:
+        return "Main pattern should have at least one capture group"
 
+    if sidecar_groups == 0:
+        return "Sidecar pattern should have at least one capture group"
+
+    if main_groups != sidecar_groups:
+        return "Main and sidecar patterns should have equal count of capture groups"
+
+    return None
+
+
+class TestSidecar:
     @pytest.mark.parametrize("main_extension, sidecar_extension, stems", [
         ("jpg", "json", ["image_001", "image_002"]),
         ("mp4", "srt", ["video_01"]),
@@ -334,8 +346,15 @@ class TestSidecar:
         (["image_001.jpg", "image_002.jpg", "image_003.jpg"], ["image_001.json"], 2),
         (["image_001.jpg", "image_002.jpg", "image_003.jpg"], [], 3),
     ])
-    def test_sidecar_missing(self, temp_dir, create_files, validate_errors, main_files, sidecar_files,
-                             expected_missing):
+    def test_sidecar_missing(
+            self,
+            temp_dir,
+            create_files,
+            validate_errors,
+            main_files,
+            sidecar_files,
+            expected_missing
+    ):
         create_files(temp_dir, {name: None for name in main_files + sidecar_files})
 
         struct = sidecar(
@@ -366,19 +385,17 @@ class TestSidecar:
 
         assert not struct.validate(temp_dir)
 
-    @pytest.mark.parametrize("main_groups, sidecar_groups, should_fail", [
-        (0, 0, True),
-        (1, 1, False),
-        (2, 2, False),
-        (1, 2, True),
-        (3, 1, True),
+    @pytest.mark.parametrize("main_groups, sidecar_groups, error_message", [
+        (main_groups, sidecar_groups, _test_sidecar_error_message(main_groups, sidecar_groups))
+        for main_groups in range(5)
+        for sidecar_groups in range(5)
     ])
-    def test_sidecar_group_validation(self, main_groups, sidecar_groups, should_fail):
+    def test_sidecar_group_validation(self, main_groups, sidecar_groups, error_message):
         main_pattern_str = r'^' + r'(\w+)_' * main_groups + r'image\.jpg$'
         sidecar_pattern_str = r'^' + r'(\w+)_' * sidecar_groups + r'image\.json$'
 
-        if should_fail:
-            with pytest.raises(ValueError):
+        if error_message:
+            with pytest.raises(ValueError, match=error_message):
                 sidecar(
                     main_pattern=r(main_pattern_str),
                     sidecar_pattern=r(sidecar_pattern_str)
@@ -392,7 +409,7 @@ class TestSidecar:
             assert result
 
 
-def min_max_checks_file_generator(size: int):
+def _test_xor_min_max_checks_file_generator(size: int):
     for check_count in range(1, size):
         for file_count in range(size):
             success_count = min(file_count, check_count)
@@ -408,7 +425,7 @@ def min_max_checks_file_generator(size: int):
                     yield min_checks, None, file_count, check_count, min_checks <= success_count
 
 
-class TestXorValidator:
+class TestXor:
     # todo: put xor into xor
 
     @pytest.mark.parametrize("children_count, min_checks, max_checks, error_message", [
@@ -545,7 +562,7 @@ class TestXorValidator:
 
     @pytest.mark.parametrize(
         "min_checks, max_checks, file_count, check_count, success",
-        min_max_checks_file_generator(5)
+        _test_xor_min_max_checks_file_generator(5)
     )
     def test_xor_min_max_combinations(
             self,
