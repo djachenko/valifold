@@ -121,7 +121,7 @@ class XorValidator(Validator, Matcher):
                              "Otherwise it will tamper with number of succesful checks.")
 
         if self.min_checks > len(self.children):
-            raise ValueError(f"Minimum number of checks should be less than or equal to children count")
+            raise ValueError("Minimum number of checks should be less than or equal to children count")
 
         if self.max_checks is not None:
             if not self.max_checks > 0:

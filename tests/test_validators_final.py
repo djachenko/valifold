@@ -88,7 +88,7 @@ def validate_errors():
 
                     break
 
-            assert found_good_set, f"No matching names for {error_type.__name__} with names: {", ".join(error_names)}"
+            assert found_good_set, f"No matching names for {error_type.__name__} with names: {', '.join(error_names)}"
 
         missed_errors = []
 
@@ -96,7 +96,7 @@ def validate_errors():
             if file_names:
                 missed_errors.append(error_type.__name__)
 
-        assert not missed_errors, f"Some expected errors were not found: {", ".join(missed_errors)}"
+        assert not missed_errors, f"Some expected errors were not found: {', '.join(missed_errors)}"
 
     return inner
 

@@ -246,7 +246,9 @@ class TestErrorSubclasses:
 
         message = error_class.default_message
 
-        assert error_class_info.raw_message in message, \
+        substring = error_class_info.raw_message
+
+        assert substring in message, \
             f"{error_class.__name__}.default_message должен содержать '{substring}'"
 
     def test_formatted_message_contains_user_substrings(self, error_class_info):
