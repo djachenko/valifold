@@ -113,17 +113,30 @@ class XorValidator(Validator, Matcher):
             raise ValueError(f"Minimum number of checks should be greater than or equal to 0,"
                              f" but {self.min_checks} is given")
 
+        if not self.children:
+            raise ValueError("There should be at least one child")
+
+        if any(child.is_optional for child in self.children if isinstance(child, SubstructureValidator)):
+            raise ValueError("XorValidator may have only non-optional children. "
+                             "Otherwise it will tamper with number of succesful checks.")
+
+        if self.min_checks > len(self.children):
+            raise ValueError("Minimum number of checks should be less than or equal to children count")
+
         if self.max_checks is not None:
             if not self.max_checks > 0:
                 raise ValueError(f"Maximum number of checks should be greater than 0, but {self.max_checks} is given")
 
             if not self.min_checks <= self.max_checks:
-                raise ValueError(f"Maximum number of checks should be greater than or equal to minimum number,"
+                raise ValueError(f"Maximum number of checks should be greater than or equal to minimum,"
                                  f"but {self.max_checks} and {self.min_checks} are given correspondingly")
 
+        elif self.min_checks == 0:
+            raise ValueError("Combination of min=0 and no max doesn't have sense")
+
     @cached_property
-    def _matching_children(self) -> list[SubstructureValidator]:
-        return [child for child in self.children if isinstance(child, SubstructureValidator)]
+    def _matching_children(self) -> list[Matcher]:
+        return [child for child in self.children if isinstance(child, Matcher)]
 
     def matches(self, name: str) -> bool:
         return any(child.matches(name) for child in self._matching_children)
@@ -138,7 +151,7 @@ class XorValidator(Validator, Matcher):
 
         errors: list[ValifoldError] = []
 
-        if success_count == 0:
+        if success_count == 0 and self.min_checks != 0:
             errors.append(AllValidationsFailedError([parent]))
 
             for error_list in error_lists:
@@ -172,7 +185,7 @@ class SidecarValidator(Validator):
             raise ValueError("Sidecar pattern should have at least one capture group")
 
         if not self.main_pattern.group_count == self.sidecar_pattern.group_count:
-            raise ValueError("Main and sidecar pattern should have equal count of capture groups")
+            raise ValueError("Main and sidecar patterns should have equal count of capture groups")
 
     def validate(self, path: Path) -> list[ValifoldError]:
         main_matches = set()
