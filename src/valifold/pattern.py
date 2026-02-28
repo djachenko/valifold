@@ -13,12 +13,15 @@ class Pattern(ABC):
 
 
 @dataclass(frozen=True)
-class BasePattern(Pattern):
+class BasePattern(Pattern, ABC):
     pattern: str
 
     def __post_init__(self):
         if not isinstance(self.pattern, str):
             raise TypeError(f"Pattern must be string, got {type(self.pattern)}")
+
+        if not self.pattern:
+            raise ValueError("Pattern must not be empty")
 
 
 class RegexPattern(BasePattern):

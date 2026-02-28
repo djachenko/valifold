@@ -14,6 +14,9 @@ class ValifoldError:
         return self.message or self.default_message or ""
 
     def __post_init__(self):
+        if not self.paths:
+            raise ValueError("Paths must not be empty")
+
         if not self._message_format:
             raise ValueError("Message or default message should be not empty or None")
 
@@ -23,10 +26,13 @@ class ValifoldError:
         else:
             string_paths = [path.name for path in self.paths]
 
-        formatted_paths = " and ".join([
-            ",".join(string_paths[:-1]),
-            string_paths[-1],
-        ])
+        if len(string_paths) > 1:
+            formatted_paths = " and ".join([
+                ", ".join(string_paths[:-1]),
+                string_paths[-1],
+            ])
+        else:
+            formatted_paths = string_paths[0]
 
         return self._message_format.format(paths=formatted_paths)
 
@@ -48,16 +54,16 @@ class ExtraItemsError(ValifoldError):
 
 
 class AllValidationsFailedError(ValifoldError):
-    default_message = "{path} failed all validations"
+    default_message = "{paths} failed all validations"
 
 
 class FewOptionsError(ValifoldError):
-    default_message = "{path} matches too few options"
+    default_message = "{paths} matches too few options"
 
 
 class ManyOptionsError(ValifoldError):
-    default_message = "{path} matches too many options"
+    default_message = "{paths} matches too many options"
 
 
 class NoSidecarError(ValifoldError):
-    default_message = "{path} do not have sidecar"
+    default_message = "{paths} do not have sidecar"
