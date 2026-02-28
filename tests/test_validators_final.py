@@ -398,21 +398,25 @@ def min_max_checks_file_generator(size: int):
             success_count = min(file_count, check_count)
 
             for min_checks in range(size):
+                if min_checks > check_count:
+                    continue
+
                 for max_checks in range(max(min_checks, 1), size):
                     yield min_checks, max_checks, file_count, check_count, min_checks <= success_count <= max_checks
 
-                yield min_checks, None, file_count, check_count, min_checks <= success_count
+                if min_checks != 0:
+                    yield min_checks, None, file_count, check_count, min_checks <= success_count
 
 
 class TestXorValidator:
-    """Валидация параметров XorValidator.__post_init__."""
+    # todo: put xor into xor
 
     @pytest.mark.parametrize("children_count, min_checks, max_checks, error_message", [
         (2, -1, 1, "Minimum number of checks should be greater than or equal to 0"),
         (2, 0, 0, "Maximum number of checks should be greater than 0"),
         (2, 0, -5, "Maximum number of checks should be greater than 0"),
-        (2, 5, 2, "Maximum number of checks should be greater than or equal to minimum"),
-        (2, 5, 6, "Minimum number of checks should be greater than or equal to children count"),
+        (6, 5, 2, "Maximum number of checks should be greater than or equal to minimum"),
+        (2, 5, 6, "Minimum number of checks should be less than or equal to children count"),
         (0, 5, 6, "There should be at least one child"),
         (1, 0, None, "Combination of min=0 and no max doesn't have sense"),
     ])
@@ -576,7 +580,7 @@ class TestXorValidator:
 
     @pytest.mark.parametrize("files_count, checks_count", [
         (files_count, checks_count)
-        for files_count in range(10)
+        for files_count in range(1, 10)  # 0 options is not few
         for checks_count in range(files_count + 1, 10)
     ])
     def test_xor_few_options_error(self, temp_dir, create_files, validate_errors, files_count, checks_count):
