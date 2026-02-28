@@ -1,4 +1,5 @@
 import string
+import sys
 import tempfile
 from collections import defaultdict
 from pathlib import Path
@@ -708,7 +709,10 @@ class TestAnything:
         ".hidden",
         "123.456.789",
         "stem with spaces",
-        "!@#$%^&*()",
+        pytest.param(
+            "!@#$%^&*()",
+            marks=pytest.mark.skipif(sys.platform == "win32", reason="Invalid filename on Windows")
+        ),
         "",
     ])
     @pytest.mark.parametrize("extension", [
