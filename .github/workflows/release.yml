@@ -74,15 +74,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
-      # Когда будешь готов выходить на PyPI:
-      # 1. Настрой Trusted Publisher на pypi.org (аналогично TestPyPI)
-      # 2. Раскомментируй шаги ниже
-      #
-      # - name: Publish to PyPI
-      #   uses: pypa/gh-action-pypi-publish@release/v1
-      #
-      # - name: Smoke test PyPI
-      #   run: |
-      #     VERSION=$(bump-my-version show current_version)
-      #     pip install valifold==$VERSION
-      #     python -c "import valifold; print('OK')"
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+      - name: Smoke test PyPI
+        run: |
+          VERSION=$(bump-my-version show current_version)
+          pip install valifold==$VERSION
+          python -c "import valifold; print('OK')"
