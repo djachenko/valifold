@@ -1,22 +1,27 @@
 import fnmatch
 import re
+from abc import abstractmethod, ABC
 from dataclasses import dataclass
 from functools import cached_property
 from re import Match
 
 
-class Pattern:
+class Pattern(ABC):
+    @abstractmethod
     def matches(self, name: str) -> bool:
         ...
 
 
 @dataclass(frozen=True)
-class BasePattern(Pattern):
+class BasePattern(Pattern, ABC):
     pattern: str
 
     def __post_init__(self):
         if not isinstance(self.pattern, str):
             raise TypeError(f"Pattern must be string, got {type(self.pattern)}")
+
+        if not self.pattern:
+            raise ValueError("Pattern must not be empty")
 
 
 class RegexPattern(BasePattern):
