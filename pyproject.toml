@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools >= 77.0.3"]
+requires = ["setuptools >= 77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "valifold"
-version = "0.0.1"
+version = "0.1.0"
 authors = [
     { name = "Igor Djachenko" },
 ]
@@ -38,6 +38,35 @@ issues = "https://github.com/djachenko/valifold/issues"
 
 
 [project.optional-dependencies]
-tests = [
-    "pytest",
+test = [
+    "pytest >= 9.0",
+    "ruff >= 0.15",
+    "mypy >= 1.19",
+    "pytest-cov >= 7.0",
 ]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest]
+testpaths = [
+    "tests",
+]
+markers = [
+    "slow: marks tests as slow",
+    "edge_case: marks tests as edge cases tests"
+]
+addopts = [
+    "-m", "not slow"
+]
+
+[tool.bumpversion]
+current_version = "0.1.0"
+commit = true
+tag = true
+tag_name = "v{new_version}"
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = "version = \"{current_version}\""
+replace = "version = \"{new_version}\""
