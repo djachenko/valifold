@@ -60,6 +60,7 @@ jobs:
 
       - name: Smoke test
         run: |
+          sleep 10
           VERSION=$(bump-my-version show current_version)
           pip install \
             --index-url https://test.pypi.org/simple/ \
@@ -79,6 +80,7 @@ jobs:
 
       - name: Smoke test PyPI
         run: |
+          sleep 10
           VERSION=$(bump-my-version show current_version)
           pip install valifold==$VERSION
           python -c "import valifold; print('OK')"
