@@ -6,7 +6,7 @@ on:
       bump:
         description: Version bump type
         required: false
-        default: minor
+        default: patch
         type: choice
         options:
           - patch
@@ -14,7 +14,57 @@ on:
           - major
 
 jobs:
-  release:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build bump-my-version
+
+      - name: Bump version (local only)
+        run: |
+          bump-my-version bump ${{ inputs.bump }} --no-commit --no-tag
+
+      - name: Build
+        run: |
+          python -m build
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          skip_existing: true
+          verbose: true
+
+      - name: Smoke test (TestPyPI)
+        run: |
+          VERSION=$(bump-my-version show current_version)
+          
+          for i in {1..5}; do
+            pip install \
+              --index-url https://test.pypi.org/simple/ \
+              --no-deps \
+              valifold==$VERSION && break
+          
+            echo "Attempt $i failed, retrying in 30s..."
+            sleep 10
+          done
+          
+          python -c "import valifold; print('OK')"
+
+  publish:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -41,46 +91,36 @@ jobs:
           git config user.name "bump-my-version"
           git config user.email "bump-my-version@users.noreply.github.com"
 
-      - name: Bump version (with commit and tag)
+      - name: Bump version
         run: |
           bump-my-version bump ${{ inputs.bump }}
+
+      - name: Build
+        run: |
+          python -m build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+      - name: Smoke test (PyPI)
+        run: |
+          VERSION=$(bump-my-version show current_version)
+          for i in {1..5}; do
+            pip install valifold==$VERSION && break
+            echo "Attempt $i failed, retrying in 30s..."
+            sleep 10
+          done
+          python -c "import valifold; print('OK')"
 
       - name: Push
         run: |
           git push --follow-tags
 
-      - name: Build
-        run: python -m build
-
-      - name: Publish to TestPyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
-          verbose: true
-
-      - name: Smoke test
-        run: |
-          sleep 10
-          VERSION=$(bump-my-version show current_version)
-          pip install \
-            --index-url https://test.pypi.org/simple/ \
-            valifold==$VERSION
-          python -c "import valifold; print('OK')"
-
       - name: Create GitHub Release
         run: |
           VERSION=$(bump-my-version show current_version)
+          
           gh release create "v$VERSION" dist/* \
             --generate-notes
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-
-      - name: Smoke test PyPI
-        run: |
-          sleep 10
-          VERSION=$(bump-my-version show current_version)
-          pip install valifold==$VERSION
-          python -c "import valifold; print('OK')"
