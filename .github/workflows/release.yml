@@ -57,7 +57,7 @@ jobs:
               --no-deps \
               valifold==$VERSION && break
           
-            echo "Attempt $i failed, retrying in 30s..."
+            echo "Attempt $i failed, retrying in 10s..."
             sleep 10
           done
           
@@ -105,11 +105,14 @@ jobs:
       - name: Smoke test (PyPI)
         run: |
           VERSION=$(bump-my-version show current_version)
+          
           for i in {1..5}; do
             pip install valifold==$VERSION && break
-            echo "Attempt $i failed, retrying in 30s..."
+            echo "Attempt $i failed, retrying in 10s..."
+          
             sleep 10
           done
+          
           python -c "import valifold; print('OK')"
 
       - name: Push
