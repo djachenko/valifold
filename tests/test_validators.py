@@ -968,3 +968,28 @@ class TestEdgeCases:
         result = struct.validate(temp_dir)
 
         assert not result
+
+
+class TestFormattedMessage:
+    def test_mandatory_missed_error_formatted_message_does_not_raise(self, temp_dir):
+        proj = temp_dir / "proj"
+        proj.mkdir()
+
+        errors = folder(w("proj"), file(w("README.md"))).validate_as_root(proj)
+
+        assert errors
+        for error in errors:
+            msg = error.formatted_message(root_path=proj)
+            assert isinstance(msg, str)
+
+    def test_extra_items_error_formatted_message_does_not_raise(self, temp_dir):
+        proj = temp_dir / "proj"
+        proj.mkdir()
+        (proj / "unexpected.txt").touch()
+
+        errors = folder(w("proj")).validate_as_root(proj)
+
+        assert errors
+        for error in errors:
+            msg = error.formatted_message(root_path=proj)
+            assert isinstance(msg, str)
