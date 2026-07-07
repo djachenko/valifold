@@ -4,7 +4,7 @@ All imports are from the top-level valifold package — the contract the public 
 """
 import pytest
 
-from valifold import anything, at_least_one, file, folder, only_one, r, sidecar, w, xor
+from valifold import anything, at_least_one, file, folder, only_one, r, sidecar, w
 
 
 # --- imports ---
