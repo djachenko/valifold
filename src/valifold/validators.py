@@ -44,7 +44,7 @@ class SubstructureValidator(Validator, Matcher, RootValidator, ABC):
                 errors += self.validate_structure(child)
 
         if count == 0 and not self.is_optional:
-            errors.append(MandatoryMissedError([parent], f"There is no match for '{self.pattern}' in '{{path}}'"))
+            errors.append(MandatoryMissedError([parent], f"There is no match for '{self.pattern}' in '{{paths}}'"))
 
         return errors
 
