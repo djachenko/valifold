@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools >= 77.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "valifold"
@@ -14,7 +14,6 @@ requires-python = ">=3.10"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
@@ -28,7 +27,7 @@ classifiers = [
     "Topic :: Utilities",
     "Typing :: Typed"
 ]
-license = { text = "MIT" }
+license = "MIT"
 
 [project.urls]
 homepage = "https://github.com/djachenko/valifold"
@@ -45,8 +44,8 @@ test = [
     "pytest-cov >= 7.0",
 ]
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.hatch.build.targets.wheel]
+packages = ["src/valifold"]
 
 [tool.pytest]
 testpaths = [
@@ -59,6 +58,9 @@ markers = [
 addopts = [
     "-m", "not slow"
 ]
+
+[tool.mypy]
+strict = true
 
 [tool.bumpversion]
 current_version = "0.2.2"
