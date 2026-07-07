@@ -2,31 +2,9 @@
 Tests that mirror README usage examples.
 All imports are from the top-level valifold package — the contract the public API must honour.
 """
-import tempfile
-from pathlib import Path
-
 import pytest
 
 from valifold import anything, at_least_one, file, folder, only_one, r, sidecar, w, xor
-
-
-@pytest.fixture
-def temp_dir():
-    with tempfile.TemporaryDirectory() as tmpdir:
-        yield Path(tmpdir)
-
-
-@pytest.fixture
-def create_files():
-    def _create(root: Path, structure: dict):
-        for key, value in structure.items():
-            new_path = root / key
-            if value is None:
-                new_path.touch()
-            if isinstance(value, dict):
-                new_path.mkdir(parents=True, exist_ok=True)
-                _create(new_path, value)
-    return _create
 
 
 # --- imports ---
