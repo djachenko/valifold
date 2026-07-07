@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools >= 77.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "valifold"
@@ -44,11 +44,8 @@ test = [
     "pytest-cov >= 7.0",
 ]
 
-[tool.setuptools.packages.find]
-where = ["src"]
-
-[tool.setuptools.package-data]
-valifold = ["py.typed"]
+[tool.hatch.build.targets.wheel]
+packages = ["src/valifold"]
 
 [tool.pytest]
 testpaths = [
