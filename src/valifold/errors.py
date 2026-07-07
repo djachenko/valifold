@@ -13,7 +13,7 @@ class ValifoldError:
     def _message_format(self) -> str:
         return self.message or self.default_message or ""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not self.paths:
             raise ValueError("Paths must not be empty")
 
