@@ -51,7 +51,7 @@ release = [
 [tool.hatch.build.targets.wheel]
 packages = ["src/valifold"]
 
-[tool.pytest]
+[tool.pytest.ini_options]
 testpaths = [
     "tests",
 ]
@@ -69,3 +69,7 @@ strict = true
 [tool.semantic_release]
 version_toml = ["pyproject.toml:project.version"]
 tag_format = "v{version}"
+branch = "master"
+commit_message = "chore(release): v{version} [skip ci]"
+major_on_zero = false
+allow_zero_version = true
