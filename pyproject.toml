@@ -45,6 +45,7 @@ test = [
 ]
 release = [
     "python-semantic-release >= 9",
+    "build",
 ]
 
 [tool.hatch.build.targets.wheel]
