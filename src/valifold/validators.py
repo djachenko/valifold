@@ -118,7 +118,7 @@ class XorValidator(Validator, Matcher):
 
         if any(child.is_optional for child in self.children if isinstance(child, SubstructureValidator)):
             raise ValueError("XorValidator may have only non-optional children. "
-                             "Otherwise it will tamper with number of succesful checks.")
+                             "Otherwise it will tamper with number of successful checks.")
 
         if self.min_checks > len(self.children):
             raise ValueError("Minimum number of checks should be less than or equal to children count")
@@ -129,10 +129,10 @@ class XorValidator(Validator, Matcher):
 
             if not self.min_checks <= self.max_checks:
                 raise ValueError(f"Maximum number of checks should be greater than or equal to minimum,"
-                                 f"but {self.max_checks} and {self.min_checks} are given correspondingly")
+                                 f" but {self.max_checks} and {self.min_checks} are given correspondingly")
 
         elif self.min_checks == 0:
-            raise ValueError("Combination of min=0 and no max doesn't have sense")
+            raise ValueError("Combination of min=0 and no max doesn't make sense")
 
     @cached_property
     def _matching_children(self) -> list[Matcher]:
