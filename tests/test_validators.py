@@ -436,7 +436,7 @@ class TestXor:
         (6, 5, 2, "Maximum number of checks should be greater than or equal to minimum"),
         (2, 5, 6, "Minimum number of checks should be less than or equal to children count"),
         (0, 5, 6, "There should be at least one child"),
-        (1, 0, None, "Combination of min=0 and no max doesn't have sense"),
+        (1, 0, None, "Combination of min=0 and no max doesn't make sense"),
     ])
     def test_xor_checks_limits(self, children_count, min_checks, max_checks, error_message):
         with pytest.raises(ValueError, match=error_message):
