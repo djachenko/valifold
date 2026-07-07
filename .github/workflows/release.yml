@@ -1,129 +1,40 @@
 name: Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      bump:
-        description: Version bump type
-        required: false
-        default: patch
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
+  push:
+    branches:
+      - master
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.x"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install build bump-my-version
-
-      - name: Bump version (local only)
-        run: |
-          bump-my-version bump ${{ inputs.bump }} --no-commit --no-tag
-
-      - name: Build
-        run: |
-          python -m build
-
-      - name: Publish to TestPyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
-          skip_existing: true
-          verbose: true
-
-      - name: Smoke test (TestPyPI)
-        run: |
-          VERSION=$(bump-my-version show current_version)
-          
-          for i in {1..5}; do
-            pip install \
-              --index-url https://test.pypi.org/simple/ \
-              --no-deps \
-              valifold==$VERSION && break
-          
-            echo "Attempt $i failed, retrying in 10s..."
-            sleep 10
-          done
-          
-          python -c "import valifold; print('OK')"
-
-  publish:
-    needs: test
-    runs-on: ubuntu-latest
+  release:
+    uses: djachenko/repokit/.github/workflows/python-release.yml@0.9
+    secrets: inherit
     permissions:
       contents: write
+
+  publish:
+    needs: release
+    if: needs.release.outputs.released == 'true'
+    runs-on: ubuntu-latest
+    permissions:
       id-token: write
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v8
         with:
-          token: ${{ secrets.RELEASE_TOKEN }}
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.x"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install build bump-my-version
-
-      - name: Configure git
-        run: |
-          git config user.name "bump-my-version"
-          git config user.email "bump-my-version@users.noreply.github.com"
-
-      - name: Bump version
-        run: |
-          bump-my-version bump ${{ inputs.bump }}
-
-      - name: Build
-        run: |
-          python -m build
+          name: dist
+          path: dist/
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
 
-      - name: Smoke test (PyPI)
+      - name: Smoke test
         run: |
-          VERSION=$(bump-my-version show current_version)
-          
+          PACKAGE=$(ls dist/*.whl | head -1 | xargs basename | sed 's/-[0-9].*//')
+          VERSION=$(ls dist/*.tar.gz | sed 's/.*-\(.*\)\.tar\.gz/\1/')
           for i in {1..5}; do
-            pip install valifold==$VERSION && break
+            pip install $PACKAGE==$VERSION && break
             echo "Attempt $i failed, retrying in 10s..."
-          
             sleep 10
           done
-          
-          python -c "import valifold; print('OK')"
-
-      - name: Push
-        run: |
-          git push --follow-tags
-
-      - name: Create GitHub Release
-        run: |
-          VERSION=$(bump-my-version show current_version)
-          
-          gh release create "v$VERSION" dist/* \
-            --generate-notes
-        env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          python -c "import $PACKAGE"

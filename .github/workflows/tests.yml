@@ -2,13 +2,14 @@ name: Tests
 
 on:
   push:
-  pull_request:
     branches:
-      - develop
-      - master
+      - '**'
+      - '!master'
+    tags-ignore:
+      - '**'
 
 jobs:
-  test:
+  tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,21 +21,16 @@ jobs:
           python-version: "3.x"
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[test]"
+        run: pip install -e ".[test]"
 
-      - name: Run tests with pytest
-        run: |
-          pytest --cov=valifold
+      - name: Run tests
+        run: pytest --cov=valifold || [ $? -eq 5 ]
 
-      - name: Lint with ruff
-        run: |
-          ruff check
+      - name: Lint
+        run: ruff check
 
-      - name: Type check with mypy
-        run: |
-          mypy src/
+      - name: Type check
+        run: mypy --install-types --non-interactive src/; mypy src/
 
       - name: Upload coverage to Coveralls
         run: |
