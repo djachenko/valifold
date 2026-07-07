@@ -28,7 +28,7 @@ classifiers = [
     "Topic :: Utilities",
     "Typing :: Typed"
 ]
-license = { text = "MIT" }
+license = "MIT"
 
 [project.urls]
 homepage = "https://github.com/djachenko/valifold"
@@ -47,6 +47,9 @@ test = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+valifold = ["py.typed"]
 
 [tool.pytest]
 testpaths = [
