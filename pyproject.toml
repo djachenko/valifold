@@ -59,6 +59,9 @@ addopts = [
     "-m", "not slow"
 ]
 
+[tool.mypy]
+strict = true
+
 [tool.bumpversion]
 current_version = "0.2.2"
 commit = true

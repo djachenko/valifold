@@ -16,7 +16,7 @@ class Pattern(ABC):
 class BasePattern(Pattern, ABC):
     pattern: str
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not isinstance(self.pattern, str):
             raise TypeError(f"Pattern must be string, got {type(self.pattern)}")
 
@@ -25,7 +25,7 @@ class BasePattern(Pattern, ABC):
 
 
 class RegexPattern(BasePattern):
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         super().__post_init__()
 
         try:

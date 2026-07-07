@@ -108,7 +108,7 @@ class XorValidator(Validator, Matcher):
     min_checks: int
     max_checks: int | None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not self.min_checks >= 0:
             raise ValueError(f"Minimum number of checks should be greater than or equal to 0,"
                              f" but {self.min_checks} is given")
@@ -177,7 +177,7 @@ class SidecarValidator(Validator):
     main_pattern: RegexPattern
     sidecar_pattern: RegexPattern
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not self.main_pattern.group_count > 0:
             raise ValueError("Main pattern should have at least one capture group")
 
