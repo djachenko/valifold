@@ -14,6 +14,7 @@ from valifold import anything, at_least_one, file, folder, only_one, r, sidecar,
 ])
 def test_public_name_importable(name: str) -> None:
     import valifold
+
     assert hasattr(valifold, name)
 
 
@@ -27,12 +28,14 @@ def test_readme_basic_valid(temp_dir, create_files):
             "src": {"app.py": None},
         }
     })
+
     structure = folder(
         w("my_project"),
         file(w("README.md")),
         file(w("*.py")),
         folder(w("src"), file(w("*.py"))),
     )
+
     assert structure.validate_as_root(temp_dir / "my_project") == []
 
 
@@ -41,8 +44,10 @@ def test_readme_basic_valid(temp_dir, create_files):
 @pytest.mark.parametrize("include_optional", [True, False])
 def test_optional_file(temp_dir, create_files, include_optional):
     files = {"settings.yaml": None}
+
     if include_optional:
         files["README.md"] = None
+
     create_files(temp_dir, {"config": files})
 
     structure = folder(
@@ -50,6 +55,7 @@ def test_optional_file(temp_dir, create_files, include_optional):
         file(w("*.yaml")),
         file(w("README.md"), is_optional=True),
     )
+
     assert structure.validate_as_root(temp_dir / "config") == []
 
 

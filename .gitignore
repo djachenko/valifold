@@ -130,3 +130,6 @@ coverage.json
 .claude/
 
 memory/
+CLAUDE.local.md
+
+_claude
