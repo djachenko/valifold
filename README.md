@@ -78,7 +78,7 @@ Understanding how DSL functions map to validator classes:
 | Abstract class defining contract.                                                             | `Pattern`          | Must not be instantiated directly                           |
 | Abstract class for string-based patterns                                                      | `BasePattern`      | Must not be instantiated directly                           |
 | Shell-style pattern matching                                                                  | `WildcardPattern`  | `w("*.txt")`                                                |
-| Regular expression matching                                                                   | `RegexPattern`     | `r(r"^\d+\.jpg$")`                                          |
+| Regular expression matching                                                                   | `RegexPattern`     | `r(r"\d+\.jpg")`                                            |
 | Abstract class defining validators contract                                                   | `Validator`    | Must not be instantiated directly                           |
 | Abstract class defining contract for filestructure-_related_ validators                       | `Matcher`    | Must not be instantiated directly                           |
 | Abstract class defining contract for validators that can represent validation starting point. | `RootValidator`    | Must not be instantiated directly                           |
@@ -184,35 +184,41 @@ r(pattern: str) -> RegexPattern
 RegexPattern(pattern: str)
 ```
 
+> **Full-string matching:** `r()` matches the entire filename — equivalent to `re.fullmatch()`. You don't need `^`/`$` anchors. For partial matching (substring), use `.*` around your pattern: `r(r".*draft.*")`.
+
 **Examples:**
 
 ```python
 from valifold import r
 
 # Match 4-digit numbers with .jpg extension
-r(r"^\d{4}\.jpg$")
+r(r"\d{4}\.jpg")
 # Matches: 0001.jpg, 1234.jpg, 9999.jpg
 # Doesn't match: 001.jpg, 12345.jpg, abcd.jpg
 
 # Match test files
-r(r"^test_\w+\.py$")
+r(r"test_\w+\.py")
 # Matches: test_utils.py, test_core_logic.py, test_123.py
 # Doesn't match: tests.py, utils_test.py, test_.py
 
 # Match date folders (YYYY-MM-DD)
-r(r"^20\d{2}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$")
+r(r"20\d{2}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])")
 # Matches: 2024-01-15, 2023-12-31, 2020-06-30
 # Doesn't match: 2024-13-01, 2024-00-15, 24-01-15
 
 # Match semantic versions
-r(r"^v\d+\.\d+\.\d+$")
+r(r"v\d+\.\d+\.\d+")
 # Matches: v1.0.0, v2.15.3, v10.2.45
 # Doesn't match: 1.0.0, v1.0, version-1.0.0
 
 # Match files with uppercase start
-r(r"^[A-Z][a-zA-Z0-9_]*\.txt$")
+r(r"[A-Z][a-zA-Z0-9_]*\.txt")
 # Matches: Main.txt, MyFile.txt, A123.txt
 # Doesn't match: main.txt, _file.txt, 123.txt
+
+# Partial match — filename contains "draft" anywhere
+r(r".*draft.*")
+# Matches: draft.txt, my_draft_v2.docx, DRAFT_final.pdf
 ```
 
 **When to use:** Complex patterns, precise validation, dates/versions, specific character requirements.

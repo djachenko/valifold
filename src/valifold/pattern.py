@@ -42,7 +42,7 @@ class RegexPattern(BasePattern):
         return self._compiled.groups
 
     def match(self, name: str) -> Match[str] | None:
-        return self._compiled.match(name)
+        return self._compiled.fullmatch(name)
 
     def matches(self, name: str) -> bool:
         return bool(self.match(name))

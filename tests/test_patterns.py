@@ -168,7 +168,7 @@ class TestRegexPattern:
         ("test.*", "other.txt", False),
         (r"^test\.txt$", "test.txt", True),
         (r"^test\.txt$", "test1.txt", False),
-        (r"^test\.txt", "test.txt.bak", True),
+        (r"test\.txt.*", "test.txt.bak", True),
         (r"^test\.txt$", "test.txt.bak", False),
         (r"^\d+\.jpg$", "001.jpg", True),
         (r"^\d+\.jpg$", "001.png", False),
