@@ -196,6 +196,11 @@ class TestWildcardPatternMatches:
         ("file_???.jpg", "file_01.jpg", False),
         ("file_??.jpg", "file_01.jpg", True),
         ("file_???.jpg", "file_abcd.jpg", False),
+        # case-insensitive matching
+        ("*.jpg", "IMG_001.JPG", True),
+        ("*.JPG", "img_001.jpg", True),
+        ("*.jpg", "photo.Jpg", True),
+        ("IMG_*", "img_001.jpg", True),
     ])
     def test_wildcard_matches(self, pattern_str, test_str, expected):
         """WildcardPattern.matches() работает корректно"""
