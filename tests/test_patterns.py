@@ -196,11 +196,22 @@ class TestWildcardPatternMatches:
         ("file_???.jpg", "file_01.jpg", False),
         ("file_??.jpg", "file_01.jpg", True),
         ("file_???.jpg", "file_abcd.jpg", False),
-        # case-insensitive matching
+        # case-insensitive matching — * wildcard
         ("*.jpg", "IMG_001.JPG", True),
         ("*.JPG", "img_001.jpg", True),
         ("*.jpg", "photo.Jpg", True),
         ("IMG_*", "img_001.jpg", True),
+        # case-insensitive matching — ? wildcard
+        ("file_?.jpg", "FILE_A.JPG", True),
+        ("FILE_?.JPG", "file_b.jpg", True),
+        # case-insensitive matching — [seq] character class
+        ("file_[abc].jpg", "FILE_B.JPG", True),
+        ("FILE_[ABC].JPG", "file_c.jpg", True),
+        # case-insensitive matching — fully uppercase filename
+        ("*.jpg", "PHOTO.JPG", True),
+        # case-insensitive matching — mixed case in both pattern and name
+        ("MiXeD_*.TxT", "mixed_file.txt", True),
+        ("mixed_*.txt", "MIXED_FILE.TXT", True),
     ])
     def test_wildcard_matches(self, pattern_str, test_str, expected):
         """WildcardPattern.matches() работает корректно"""
