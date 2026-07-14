@@ -342,6 +342,45 @@ class TestSidecar:
             assert result
 
 
+    @pytest.mark.parametrize("colliding_files, expected_missing_count", [
+        (["2024_photo.jpg", "2024_video.jpg"], 2),
+        (["2024_a.jpg", "2024_b.jpg", "2024_c.jpg"], 3),
+    ])
+    def test_sidecar_capture_collision_all_reported(
+            self,
+            temp_dir,
+            create_files,
+            validate_errors,
+            colliding_files,
+            expected_missing_count,
+    ):
+        create_files(temp_dir, {name: None for name in colliding_files})
+
+        struct = sidecar(
+            main_pattern=r(r'^(\d{4})_.*\.jpg$'),
+            sidecar_pattern=r(r'^(\d{4})\.xmp$'),
+        )
+
+        result = struct.validate(temp_dir)
+
+        assert result
+        validate_errors(result, (NoSidecarError, colliding_files))
+
+    def test_sidecar_capture_collision_with_sidecar_no_error(self, temp_dir, create_files):
+        create_files(temp_dir, {
+            "2024_photo.jpg": None,
+            "2024_video.jpg": None,
+            "2024.xmp": None,
+        })
+
+        struct = sidecar(
+            main_pattern=r(r'^(\d{4})_.*\.jpg$'),
+            sidecar_pattern=r(r'^(\d{4})\.xmp$'),
+        )
+
+        assert not struct.validate(temp_dir)
+
+
 def _test_xor_min_max_checks_file_generator(size: int):
     for check_count in range(1, size):
         for file_count in range(size):

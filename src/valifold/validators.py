@@ -190,7 +190,7 @@ class SidecarValidator(Validator):
     def validate(self, path: Path) -> list[ValifoldError]:
         main_matches = set()
         side_matches = set()
-        main_map = {}
+        main_map: dict[tuple, list[Path]] = {}
 
         for item in path.iterdir():
             main_match = self.main_pattern.match(item.name)
@@ -198,7 +198,7 @@ class SidecarValidator(Validator):
             if main_match:
                 groups = main_match.groups()
                 main_matches.add(groups)
-                main_map[groups] = item
+                main_map.setdefault(groups, []).append(item)
 
             side_match = self.sidecar_pattern.match(item.name)
 
@@ -207,7 +207,13 @@ class SidecarValidator(Validator):
 
         errors: list[ValifoldError] = []
 
-        if mismatched_items := [main_map[mismatch] for mismatch in main_matches.difference(side_matches)]:
-            errors.append(NoSidecarError(mismatched_items))
+        mismatched_paths = [
+            p
+            for mismatch in main_matches.difference(side_matches)
+            for p in main_map[mismatch]
+        ]
+
+        if mismatched_paths:
+            errors.append(NoSidecarError(mismatched_paths))
 
         return errors
