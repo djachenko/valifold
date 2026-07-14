@@ -6,6 +6,7 @@ from valifold.validators import Validator
 __all__ = [
     "file", "folder", "sidecar", "xor", "only_one", "at_least_one", "anything",
     "w", "r",
-    "ValifoldError", "IOAccessError",
+    "ValifoldError",
+    "IOAccessError",
     "Validator",
 ]

@@ -931,42 +931,40 @@ class TestFormattedMessage:
 
 
 class TestOSError:
-    def test_file_validate_oserror_returns_io_access_error(self, temp_dir):
-        with patch.object(Path, 'iterdir', side_effect=OSError("Permission denied")):
+    @pytest.mark.parametrize("exc_type", [OSError, PermissionError, FileNotFoundError])
+    def test_file_validate_oserror_returns_io_access_error(self, temp_dir, exc_type):
+        with patch.object(Path, 'iterdir', side_effect=exc_type("error")):
             result = file(w("*.txt")).validate(temp_dir)
 
         assert len(result) == 1
         assert isinstance(result[0], IOAccessError)
 
-    def test_file_validate_does_not_raise(self, temp_dir):
-        with patch.object(Path, 'iterdir', side_effect=OSError("Permission denied")):
-            result = file(w("*.txt")).validate(temp_dir)
-
-        assert isinstance(result, list)
-
-    def test_folder_validate_oserror_returns_io_access_error(self, temp_dir):
-        with patch.object(Path, 'iterdir', side_effect=OSError("Permission denied")):
+    @pytest.mark.parametrize("exc_type", [OSError, PermissionError, FileNotFoundError])
+    def test_folder_validate_oserror_returns_io_access_error(self, temp_dir, exc_type):
+        with patch.object(Path, 'iterdir', side_effect=exc_type("error")):
             result = folder(w("subdir")).validate(temp_dir)
 
         assert len(result) == 1
         assert isinstance(result[0], IOAccessError)
 
-    def test_folder_validate_structure_oserror_returns_io_access_error(self, temp_dir, create_files):
+    @pytest.mark.parametrize("exc_type", [OSError, PermissionError, FileNotFoundError])
+    def test_folder_validate_structure_oserror_returns_io_access_error(self, temp_dir, create_files, exc_type):
         create_files(temp_dir, {"subdir": {}})
         original_iterdir = Path.iterdir
 
         def selective_iterdir(self):
             if self == temp_dir:
                 return original_iterdir(self)
-            raise OSError("Permission denied")
+            raise exc_type("error")
 
         with patch.object(Path, 'iterdir', selective_iterdir):
             result = folder(w("subdir")).validate(temp_dir)
 
         assert any(isinstance(e, IOAccessError) for e in result)
 
-    def test_sidecar_validate_oserror_returns_io_access_error(self, temp_dir):
-        with patch.object(Path, 'iterdir', side_effect=OSError("Permission denied")):
+    @pytest.mark.parametrize("exc_type", [OSError, PermissionError, FileNotFoundError])
+    def test_sidecar_validate_oserror_returns_io_access_error(self, temp_dir, exc_type):
+        with patch.object(Path, 'iterdir', side_effect=exc_type("error")):
             result = sidecar(r(r'^(\d+)\.jpg$'), r(r'^(\d+)\.xmp$')).validate(temp_dir)
 
         assert len(result) == 1
