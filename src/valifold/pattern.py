@@ -50,7 +50,7 @@ class RegexPattern(BasePattern):
 
 class WildcardPattern(BasePattern):
     def matches(self, name: str) -> bool:
-        return fnmatch.fnmatch(name, self.pattern)
+        return fnmatch.fnmatchcase(name.lower(), self.pattern.lower())
 
 
 def w(pattern: str) -> WildcardPattern:

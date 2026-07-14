@@ -30,10 +30,10 @@ classifiers = [
 license = "MIT"
 
 [project.urls]
-homepage = "https://github.com/djachenko/valifold"
-source = "https://github.com/djachenko/valifold"
-documentation = "https://github.com/djachenko/valifold#readme"
-issues = "https://github.com/djachenko/valifold/issues"
+Homepage = "https://github.com/djachenko/valifold"
+Source = "https://github.com/djachenko/valifold"
+Documentation = "https://github.com/djachenko/valifold#readme"
+Issues = "https://github.com/djachenko/valifold/issues"
 
 
 [project.optional-dependencies]
@@ -70,6 +70,5 @@ strict = true
 version_toml = ["pyproject.toml:project.version"]
 tag_format = "v{version}"
 branch = "master"
-commit_message = "chore(release): v{version} [skip ci]"
 major_on_zero = false
 allow_zero_version = true
