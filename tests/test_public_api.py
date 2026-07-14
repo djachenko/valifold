@@ -131,7 +131,12 @@ def test_regex_pattern(temp_dir, create_files):
 
 # --- case-insensitive wildcard matching ---
 
-def test_wildcard_case_insensitive(temp_dir, create_files):
-    create_files(temp_dir, {"photos": {"IMG_001.JPG": None}})
+@pytest.mark.parametrize("filenames", [
+    ["IMG_001.JPG"],
+    ["img_001.jpg"],
+    ["IMG_001.JPG", "img_002.jpg"],
+])
+def test_wildcard_case_insensitive(temp_dir, create_files, filenames):
+    create_files(temp_dir, {"photos": {f: None for f in filenames}})
     structure = folder(w("photos"), file(w("*.jpg")))
     assert structure.validate_as_root(temp_dir / "photos") == []
