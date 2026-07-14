@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.0.1 (2026-07-14)
+
+### Bug Fixes
+
+- Use re.fullmatch in RegexPattern for full-string matching
+  ([`2f491b3`](https://github.com/djachenko/valifold/commit/2f491b3812d7fbfa8fd5c83057b0879d95cfd801))
+
+### Chores
+
+- Apply repokit config updates
+  ([`7297e04`](https://github.com/djachenko/valifold/commit/7297e04ea9f21f61cac648c6efe4e01e99d0c53b))
+
+
 ## v1.0.0 (2026-07-07)
 
 ### Bug Fixes
