@@ -1,5 +1,7 @@
 import string
 import sys
+from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -13,6 +15,7 @@ from valifold.errors import (
     NoSidecarError,
     AllValidationsFailedError,
     ManyOptionsError,
+    IOAccessError,
 )
 from valifold.pattern import w, r
 from valifold.validators import XorValidator
@@ -925,3 +928,46 @@ class TestFormattedMessage:
         for error in errors:
             msg = error.formatted_message(root_path=proj)
             assert isinstance(msg, str)
+
+
+class TestOSError:
+    def test_file_validate_oserror_returns_io_access_error(self, temp_dir):
+        with patch.object(Path, 'iterdir', side_effect=OSError("Permission denied")):
+            result = file(w("*.txt")).validate(temp_dir)
+
+        assert len(result) == 1
+        assert isinstance(result[0], IOAccessError)
+
+    def test_file_validate_does_not_raise(self, temp_dir):
+        with patch.object(Path, 'iterdir', side_effect=OSError("Permission denied")):
+            result = file(w("*.txt")).validate(temp_dir)
+
+        assert isinstance(result, list)
+
+    def test_folder_validate_oserror_returns_io_access_error(self, temp_dir):
+        with patch.object(Path, 'iterdir', side_effect=OSError("Permission denied")):
+            result = folder(w("subdir")).validate(temp_dir)
+
+        assert len(result) == 1
+        assert isinstance(result[0], IOAccessError)
+
+    def test_folder_validate_structure_oserror_returns_io_access_error(self, temp_dir, create_files):
+        create_files(temp_dir, {"subdir": {}})
+        original_iterdir = Path.iterdir
+
+        def selective_iterdir(self):
+            if self == temp_dir:
+                return original_iterdir(self)
+            raise OSError("Permission denied")
+
+        with patch.object(Path, 'iterdir', selective_iterdir):
+            result = folder(w("subdir")).validate(temp_dir)
+
+        assert any(isinstance(e, IOAccessError) for e in result)
+
+    def test_sidecar_validate_oserror_returns_io_access_error(self, temp_dir):
+        with patch.object(Path, 'iterdir', side_effect=OSError("Permission denied")):
+            result = sidecar(r(r'^(\d+)\.jpg$'), r(r'^(\d+)\.xmp$')).validate(temp_dir)
+
+        assert len(result) == 1
+        assert isinstance(result[0], IOAccessError)
