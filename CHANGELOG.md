@@ -2,6 +2,24 @@
 
 <!-- version list -->
 
+## v1.0.3 (2026-07-17)
+
+### Bug Fixes
+
+- Catch OSError in validate() and convert to IOAccessError
+  ([`8939a8e`](https://github.com/djachenko/valifold/commit/8939a8ee404aa44457bdace1421da74bacd99d05))
+
+### Refactoring
+
+- Parametrize OSError tests by exc_type, fix __init__ formatting
+  ([`59040a8`](https://github.com/djachenko/valifold/commit/59040a82aaafadfaa6af7292dc9742fbf5cd84ac))
+
+### Testing
+
+- Add OSError → IOAccessError coverage for all validators
+  ([`25227ca`](https://github.com/djachenko/valifold/commit/25227caaf41237f74ffff0e5e464ece4788a62ee))
+
+
 ## v1.0.2 (2026-07-14)
 
 
