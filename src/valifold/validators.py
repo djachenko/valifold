@@ -4,7 +4,7 @@ from functools import cached_property
 from pathlib import Path
 
 from valifold.errors import ValifoldError, MandatoryMissedError, NotDirectoryError, ExtraItemsError, ManyOptionsError, \
-    FewOptionsError, AllValidationsFailedError, NotFileError, NoSidecarError
+    FewOptionsError, AllValidationsFailedError, NotFileError, NoSidecarError, IOAccessError
 from valifold.pattern import Pattern, RegexPattern
 
 
@@ -38,7 +38,12 @@ class SubstructureValidator(Validator, Matcher, RootValidator, ABC):
         errors = []
         count = 0
 
-        for child in parent.iterdir():
+        try:
+            children = list(parent.iterdir())
+        except OSError:
+            return [IOAccessError([parent])]
+
+        for child in children:
             if self.matches(child.name):
                 count += 1
                 errors += self.validate_structure(child)
@@ -92,7 +97,13 @@ class FolderValidator(SubstructureValidator):
 
         extra_items = []
 
-        for item in self_path.iterdir():
+        try:
+            items = list(self_path.iterdir())
+        except OSError:
+            errors.append(IOAccessError([self_path]))
+            return errors
+
+        for item in items:
             if not any(child.matches(item.name) for child in self._structure_children):
                 extra_items.append(item)
 
@@ -192,7 +203,12 @@ class SidecarValidator(Validator):
         side_matches = set()
         main_map = {}
 
-        for item in path.iterdir():
+        try:
+            items = list(path.iterdir())
+        except OSError:
+            return [IOAccessError([path])]
+
+        for item in items:
             main_match = self.main_pattern.match(item.name)
 
             if main_match:

@@ -67,3 +67,7 @@ class ManyOptionsError(ValifoldError):
 
 class NoSidecarError(ValifoldError):
     default_message = "{paths} do not have sidecar"
+
+
+class IOAccessError(ValifoldError):
+    default_message = "Cannot access {paths}"
