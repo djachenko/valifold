@@ -188,7 +188,7 @@ class SidecarValidator(Validator):
             raise ValueError("Main and sidecar patterns should have equal count of capture groups")
 
     def validate(self, path: Path) -> list[ValifoldError]:
-        main_map: dict[tuple, Path] = {}
+        main_map: dict[tuple[str, ...], Path] = {}
         side_matches = set()
 
         for item in path.iterdir():
