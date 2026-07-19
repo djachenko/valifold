@@ -334,7 +334,7 @@ class TestErrorEdgeCases:
         error = error_class([test_file])
 
         formatted = error.formatted_message(root_path=other_tmp)
-        assert "file.txt" in formatted
+        assert formatted == error.formatted_message(root_path=None)
 
     @pytest.mark.parametrize("num_paths", [1, 2, 3, 5, 10])
     def test_formatted_message_consistency_across_sizes(self, error_class, tmp_path, num_paths):
