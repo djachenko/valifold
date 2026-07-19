@@ -90,22 +90,21 @@ class FolderValidator(SubstructureValidator):
         if not self_path.is_dir():
             return [NotDirectoryError([self_path])]
 
+        try:
+            entries = list(self_path.iterdir())
+        except OSError:
+            return [IOAccessError([self_path])]
+
         errors = []
 
         for child in self.children:
             errors += child.validate(self_path)
 
-        extra_items = []
-
-        try:
-            items = list(self_path.iterdir())
-        except OSError:
-            errors.append(IOAccessError([self_path]))
-            return errors
-
-        for item in items:
-            if not any(child.matches(item.name) for child in self._structure_children):
-                extra_items.append(item)
+        extra_items = [
+            item
+            for item in entries
+            if not any(child.matches(item.name) for child in self._structure_children)
+        ]
 
         if extra_items:
             errors.append(ExtraItemsError(extra_items))
