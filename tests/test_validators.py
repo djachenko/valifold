@@ -948,7 +948,7 @@ class TestOSError:
         assert isinstance(result[0], IOAccessError)
 
     @pytest.mark.parametrize("exc_type", [OSError, PermissionError, FileNotFoundError])
-    def test_folder_validate_structure_oserror_returns_io_access_error(self, temp_dir, create_files, exc_type):
+    def test_folder_validate_structure_oserror_returns_single_io_access_error(self, temp_dir, create_files, exc_type):
         create_files(temp_dir, {"subdir": {}})
         original_iterdir = Path.iterdir
 
@@ -958,9 +958,10 @@ class TestOSError:
             raise exc_type("error")
 
         with patch.object(Path, 'iterdir', selective_iterdir):
-            result = folder(w("subdir")).validate(temp_dir)
+            result = folder(w("subdir"), file(w("*.txt"))).validate(temp_dir)
 
-        assert any(isinstance(e, IOAccessError) for e in result)
+        assert len(result) == 1
+        assert isinstance(result[0], IOAccessError)
 
     @pytest.mark.parametrize("exc_type", [OSError, PermissionError, FileNotFoundError])
     def test_sidecar_validate_oserror_returns_io_access_error(self, temp_dir, exc_type):
