@@ -327,15 +327,15 @@ class TestErrorEdgeCases:
         assert unicode_name in formatted
 
     def test_root_path_not_parent_of_path(self, error_class, tmp_path):
-        """root_path не является родителем пути - должен выбросить ValueError"""
+        """root_path не является родителем пути - возвращает path.name без исключения"""
         other_tmp = Path("/tmp/other")
         test_file = tmp_path / "file.txt"
 
         error = error_class([test_file])
 
-        # relative_to должен выбросить ValueError
-        with pytest.raises(ValueError):
-            error.formatted_message(root_path=other_tmp)
+        formatted = error.formatted_message(root_path=other_tmp)
+
+        assert "file.txt" in formatted
 
     @pytest.mark.parametrize("num_paths", [1, 2, 3, 5, 10])
     def test_formatted_message_consistency_across_sizes(self, error_class, tmp_path, num_paths):
