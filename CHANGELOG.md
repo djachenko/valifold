@@ -2,6 +2,30 @@
 
 <!-- version list -->
 
+## v1.0.5 (2026-07-20)
+
+### Bug Fixes
+
+- Fall back to path.name in formatted_message() when root_path is not an ancestor
+  ([`3bf9243`](https://github.com/djachenko/valifold/commit/3bf9243adbaacadf4e016befc110ab7f40d78e82))
+
+### Code Style
+
+- Add blank line before assert in test_root_path_not_parent_of_path
+  ([`832136e`](https://github.com/djachenko/valifold/commit/832136e84a88dcad01ca3feddace81547b0c7a6b))
+
+- Add blank line before for loop in formatted_message()
+  ([`3d02a96`](https://github.com/djachenko/valifold/commit/3d02a963e52f18593dcdc734d41853a8e4686dfb))
+
+### Testing
+
+- Tighten root_path_not_parent assertion to compare with no-root-path result
+  ([`86c1083`](https://github.com/djachenko/valifold/commit/86c108314484f4c064482b1fbae7b1e32034d210))
+
+- Update root_path_not_parent test to expect path.name fallback instead of ValueError
+  ([`230a29b`](https://github.com/djachenko/valifold/commit/230a29be8f694f45a72efc71b35fd6b5caaa2c09))
+
+
 ## v1.0.4 (2026-07-17)
 
 
