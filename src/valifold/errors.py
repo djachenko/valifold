@@ -22,7 +22,13 @@ class ValifoldError:
 
     def formatted_message(self, root_path: Path | None = None) -> str:
         if root_path:
-            string_paths = [str(path.relative_to(root_path)) for path in self.paths]
+            string_paths = []
+
+            for path in self.paths:
+                if root_path in path.parents:
+                    string_paths.append(str(path.relative_to(root_path)))
+                else:
+                    string_paths.append(path.name)
         else:
             string_paths = [path.name for path in self.paths]
 
